@@ -1,0 +1,6 @@
+okvs_utility.hpp  
+#elif defined(__GNUC__) || __has_builtin(__builtin_clz)  ->  #elif defined(__GNUC__)
+#if defined(__GNUC__) || __has_builtin(__builtin_clzll)  ->  #if defined(__GNUC__)
+
+crypto/ec_group.hpp
+//#define ENABLE_X25519_ACCELERATION

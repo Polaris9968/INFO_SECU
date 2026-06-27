@@ -1,0 +1,71 @@
+# ========================
+# 编译产物
+# ========================
+Kunlun/build/
+**/*.o
+**/*.a
+**/*.so
+**/*.exe
+
+# ========================
+# 用户上传的真实数据（保密）
+# ========================
+Kunlun/PSO_data/PSI_data/
+Kunlun/PSO_data/PSI_union_data/
+Kunlun/PSO_data/PSI_card_data/
+
+# ========================
+# 改色备份文件
+# ========================
+**/*.bak
+
+# ========================
+# Python
+# ========================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+.venv
+*.egg-info/
+
+# ========================
+# IDE / 编辑器
+# ========================
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# ========================
+# 日志
+# ========================
+*.log
+logs/
+
+# ========================
+# 环境配置 / 密钥
+# ========================
+.env
+*.key
+*.pem
+secrets.json
+
+# ========================
+# 前端临时文件
+# ========================
+node_modules/
+dist/
+# Kunlun 是第三方库，库内的 .git 不上传
+Kunlun/.git
+
+# 其他旧 build 目录
+Kunlun/build_mixed/
+
+# 运行时用户数据（密码哈希/邮箱/小组数据，绝密）
+InformationSecurity/python_Flask/backend/data/

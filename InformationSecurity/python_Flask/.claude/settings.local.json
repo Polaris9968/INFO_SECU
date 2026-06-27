@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python:*)",
+      "Bash(grep -E \"\\\\.\\(json|txt\\)$\")",
+      "Bash(python3 -c \"import os; print\\('os.path.dirname\\(__file__\\):', os.path.dirname\\(__file__\\)\\); print\\('USERS_FILE:', os.path.join\\(os.path.dirname\\(__file__\\), 'users.json'\\)\\); print\\('dirname\\(USERS_FILE\\):', os.path.dirname\\(os.path.join\\(os.path.dirname\\(__file__\\), 'users.json'\\)\\)\\)\")",
+      "Bash(python3 -c ' *)",
+      "Bash(python3 *)",
+      "Bash(chmod +x *)",
+      "Bash(kill *)",
+      "Bash(curl *)",
+      "Bash(pkill *)",
+      "Bash(netstat -tlnp)",
+      "Bash(./compile_psi.sh)"
+    ]
+  }
+}

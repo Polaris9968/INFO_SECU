@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<title>协作排序 - 多人协作排序系统</title>
+
+<style>
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    background: #f9fafb;
+    color: #1f2937;
+}
+
+/* 顶部导航栏 */
+.top-bar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 60px;
+    background: #ffffff;
+    border-bottom: 1px solid #e5e7eb;
+    color: #1f2937;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 25px;
+    z-index: 100;
+}
+
+.top-bar .logo {
+    font-size: 20px;
+    font-weight: bold;
+}
+
+.top-bar .user-info {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.top-bar .back-btn {
+    padding: 8px 16px;
+    background: #f3f4f6;
+    border: none;
+    border-radius: 6px;
+    color: #1f2937;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.top-bar .back-btn:hover {
+    background: #e5e7eb;
+}
+
+/* 主容器 */
+.main-container {
+    display: flex;
+    margin-top: 60px;
+}
+
+/* 左侧边栏 */
+.sidebar {
+    width: 30%;
+    min-width: 300px;
+    background: #f3f4f6;
+    padding: 25px;
+}
+
+/* 右侧主区域 */
+.main-content {
+    flex: 1;
+    padding: 25px;
+}
+
+/* 卡片样式 */
+.card {
+    background: white;
+    color: #333;
+    padding: 20px;
+    border-radius: 12px;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 15px #f3f4f6;
+}
+
+.card h2 {
+    margin-bottom: 15px;
+    color: #1f2937;
+    font-size: 18px;
+}
+
+.card h3 {
+    margin-bottom: 10px;
+    color: #1f2937;
+    font-size: 16px;
+}
+
+/* 表单样式 */
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+    color: #666;
+    font-size: 14px;
+}
+
+.form-group input {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 14px;
+}
+
+.form-group input:focus {
+    outline: none;
+    border-color: #3b82f6;
+}
+
+/* 按钮样式 */
+.btn {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.3s;
+    margin-right: 10px;
+}
+
+.btn-primary {
+    background: #3b82f6;
+    color: #ffffff;
+    border: none;
+}
+
+.btn-primary:hover {
+    transform: scale(1.02);
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.15);
+}
+
+.btn-success {
+    background: #10b981;
+    color: #ffffff;
+    border: none;
+}
+
+.btn-success:hover {
+    transform: scale(1.02);
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.15);
+}
+
+.btn-danger {
+    background: #ef4444;
+    color: #ffffff;
+    border: none;
+}
+
+.btn-danger:hover {
+    background: #dc2626;
+}
+
+.btn-small {
+    padding: 6px 12px;
+    font-size: 12px;
+}
+
+.btn:disabled {
+    background: #e5e7eb;
+    color: #9ca3af;
+    border-color: #e5e7eb;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+/* 小组列表 */
+.group-list {
+    list-style: none;
+}
+
+.group-item {
+    padding: 12px;
+    background: #f5f5f5;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    cursor: pointer;
+    transition: all 0.3s;
+    border-left: 4px solid transparent;
+}
+
+.group-item:hover {
+    background: #e8f4f8;
+    border-left-color: #3b82f6;
+}
+
+.group-item.active {
+    background: #e8f4f8;
+    border-left-color: #3b82f6;
+}
+
+.group-name {
+    font-weight: bold;
+    color: #1f2937;
+}
+
+.group-id {
+    font-size: 12px;
+    color: #999;
+    margin-top: 4px;
+}
+
+.group-meta {
+    font-size: 12px;
+    color: #666;
+    margin-top: 4px;
+}
+
+/* 成员列表 */
+.member-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.member-tag {
+    padding: 5px 10px;
+    background: #e8f4f8;
+    border-radius: 15px;
+    font-size: 13px;
+    color: #1f2937;
+}
+
+.member-tag.creator {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+/* 当前小组信息 */
+.group-info-card {
+    background: #3b82f6;
+    color: white;
+}
+
+.group-info-card h2 {
+    color: white;
+}
+
+.group-info-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px solid #f3f4f6;
+}
+
+.group-info-item:last-child {
+    border-bottom: none;
+}
+
+.group-info-label {
+    opacity: 0.8;
+}
+
+.group-info-value {
+    font-weight: bold;
+}
+
+.group-code {
+    font-size: 32px;
+    font-family: 'Courier New', monospace;
+    text-align: center;
+    letter-spacing: 5px;
+    margin: 15px 0;
+    background: #f3f4f6;
+    padding: 15px;
+    border-radius: 10px;
+}
+
+/* 文件上传区域 */
+.upload-area {
+    border: 2px dashed #ccc;
+    border-radius: 10px;
+    padding: 30px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.upload-area:hover {
+    border-color: #3b82f6;
+    background: #f8f9fa;
+}
+
+.upload-area input[type="file"] {
+    display: none;
+}
+
+.upload-icon {
+    font-size: 40px;
+    color: #999;
+    margin-bottom: 10px;
+}
+
+.upload-text {
+    color: #666;
+    font-size: 14px;
+}
+
+/* 排序结果区域 */
+.result-container {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 8px;
+    margin-top: 15px;
+}
+
+.result-container h3 {
+    margin-bottom: 10px;
+    color: #333;
+    font-size: 16px;
+}
+
+#sortedResult {
+    background: white;
+    padding: 15px;
+    border-radius: 8px;
+    font-family: 'Courier New', monospace;
+    font-size: 14px;
+    line-height: 1.8;
+    word-break: break-all;
+}
+
+/* 统计信息 */
+.stats-info {
+    display: flex;
+    gap: 15px;
+    margin-top: 15px;
+    flex-wrap: wrap;
+}
+
+.stat-item {
+    background: white;
+    padding: 12px 18px;
+    border-radius: 8px;
+    border-left: 4px solid #3b82f6;
+    flex: 1;
+    min-width: 100px;
+}
+
+.stat-label {
+    font-size: 12px;
+    color: #666;
+}
+
+.stat-value {
+    font-size: 20px;
+    font-weight: bold;
+    color: #1f2937;
+}
+
+/* 上传记录 */
+.upload-records {
+    margin-top: 15px;
+}
+
+.record-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px;
+    background: white;
+    border-radius: 6px;
+    margin-bottom: 8px;
+}
+
+.record-user {
+    font-weight: bold;
+    color: #1f2937;
+}
+
+.record-count {
+    color: #666;
+}
+
+.record-time {
+    font-size: 12px;
+    color: #999;
+}
+
+.record-actions {
+    display: flex;
+    align-items: center;
+}
+
+.btn-delete-record {
+    padding: 4px 10px;
+    background: #ef4444;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.btn-delete-record:hover {
+    background: #dc2626;
+}
+
+/* 提示信息 */
+.hint-text {
+    font-size: 13px;
+    color: #999;
+    margin-top: 10px;
+}
+
+/* 隐藏元素 */
+.hidden {
+    display: none !important;
+}
+
+/* 空状态 */
+.empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: #999;
+}
+
+.empty-state-icon {
+    font-size: 48px;
+    margin-bottom: 15px;
+}
+
+/* 加载状态 */
+.loading {
+    text-align: center;
+    padding: 20px;
+    color: #999;
+}
+
+/* 自动刷新指示器 */
+.auto-refresh {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: rgba(255,255,255,0.7);
+}
+
+.refresh-dot {
+    width: 8px;
+    height: 8px;
+    background: #4ade80;
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+/* 操作按钮组 */
+.action-buttons {
+    display: flex;
+    gap: 10px;
+    margin-top: 15px;
+}
+</style>
+</head>
+
+<body>
+
+<!-- 顶部导航栏 -->
+<div class="top-bar">
+    <div class="logo">多人协作排序系统</div>
+    <div class="user-info">
+        <span id="userInfo"></span>
+        <button class="back-btn" onclick="window.location.href='home.html'">返回首页</button>
+    </div>
+</div>
+
+<!-- 主容器 -->
+<div class="main-container">
+
+    <!-- 左侧边栏 -->
+    <div class="sidebar">
+        <!-- 创建/加入小组 -->
+        <div class="card">
+            <h2>创建或加入小组</h2>
+            <div class="form-group">
+                <label>小组名称（创建新小组）</label>
+                <input type="text" id="groupNameInput" placeholder="输入小组名称" maxlength="50">
+            </div>
+            <button class="btn btn-primary" onclick="createGroup()">创建小组</button>
+            <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #eee;">
+                <div class="form-group">
+                    <label>小组ID（加入现有小组）</label>
+                    <input type="text" id="groupIdInput" placeholder="输入6位小组ID" maxlength="6" style="text-transform: uppercase;">
+                </div>
+                <button class="btn btn-success" onclick="joinGroup()">加入小组</button>
+            </div>
+        </div>
+
+        <!-- 我的小组列表 -->
+        <div class="card">
+            <h2>我的小组</h2>
+            <div class="auto-refresh" style="margin-bottom: 10px;">
+                <div class="refresh-dot"></div>
+                <span>自动刷新中</span>
+            </div>
+            <ul class="group-list" id="myGroupList">
+                <li class="empty-state">加载中...</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- 右侧主区域 -->
+    <div class="main-content">
+
+        <!-- 未选择小组时的提示 -->
+        <div id="noGroupSelected" class="card">
+            <div class="empty-state">
+                <div class="empty-state-icon">👥</div>
+                <p>请选择或创建一个小组开始协作</p>
+                <p class="hint-text">在左侧创建新小组或输入小组ID加入现有小组</p>
+            </div>
+        </div>
+
+        <!-- 当前小组信息 -->
+        <div id="currentGroupSection" class="hidden">
+            <div class="card group-info-card">
+                <h2>📊 <span id="currentGroupName"></span></h2>
+                <div class="group-code" id="currentGroupId">ABC123</div>
+                <div class="group-info-item">
+                    <span class="group-info-label">组长</span>
+                    <span class="group-info-value" id="groupCreator"></span>
+                </div>
+                <div class="group-info-item">
+                    <span class="group-info-label">成员数量</span>
+                    <span class="group-info-value" id="memberCount"></span>
+                </div>
+                <div class="group-info-item">
+                    <span class="group-info-label">创建时间</span>
+                    <span class="group-info-value" id="groupCreatedAt"></span>
+                </div>
+            </div>
+
+            <!-- 成员列表 -->
+            <div class="card">
+                <h2>👥 小组成员</h2>
+                <div class="member-list" id="memberList">
+                    <!-- 动态生成 -->
+                </div>
+            </div>
+
+            <!-- 文件上传 -->
+            <div class="card">
+                <h2>📁 上传文件</h2>
+                <p style="color: #666; margin-bottom: 10px;">支持整数、小数、负数，以空格、换行或逗号分隔</p>
+                <div class="upload-area" onclick="document.getElementById('groupFileInput').click()">
+                    <input type="file" id="groupFileInput" accept=".txt" onchange="handleGroupFileUpload(this)">
+                    <div class="upload-icon">📄</div>
+                    <div class="upload-text">点击选择 .txt 文件或拖拽文件到此处</div>
+                </div>
+                <button class="btn btn-primary" id="groupUploadBtn" onclick="uploadGroupFile()" style="margin-top: 15px;" disabled>上传并合并排序</button>
+            </div>
+
+            <!-- 排序结果 -->
+            <div class="card" id="resultCard">
+                <h2>📈 排序结果</h2>
+                <div class="stats-info">
+                    <div class="stat-item">
+                        <div class="stat-label">数字总数</div>
+                        <div class="stat-value" id="statCount">-</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">最大值</div>
+                        <div class="stat-value" id="statMax">-</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">最小值</div>
+                        <div class="stat-value" id="statMin">-</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">平均值</div>
+                        <div class="stat-value" id="statAvg">-</div>
+                    </div>
+                </div>
+                <div class="result-container">
+                    <h3>排序结果（从大到小）</h3>
+                    <pre id="sortedResult">暂无数据</pre>
+                </div>
+            </div>
+
+            <!-- 上传记录 -->
+            <div class="card">
+                <h2>📋 上传记录</h2>
+                <div id="uploadRecords">
+                    <div class="empty-state">暂无上传记录</div>
+                </div>
+            </div>
+
+            <!-- 操作按钮 -->
+            <div class="card">
+                <h2>⚙️ 操作</h2>
+                <div class="action-buttons">
+                    <button class="btn btn-success" onclick="refreshCurrentGroup()">🔄 刷新</button>
+                    <button class="btn btn-danger hidden" id="leaveGroupBtn" onclick="leaveCurrentGroup()">退出小组</button>
+                    <button class="btn btn-danger hidden" id="deleteGroupBtn" onclick="deleteCurrentGroup()">解散小组</button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+</div>
+
+<script src="./api.js"></script>
+<script src="./collaborate.js"></script>
+
+</body>
+</html>

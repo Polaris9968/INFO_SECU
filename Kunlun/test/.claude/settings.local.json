@@ -1,0 +1,35 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(g++ *)",
+      "Bash(./my_mqrpmt_psi)",
+      "Bash(make)",
+      "Bash(cp test/sender_mixed.txt test/sender.txt)",
+      "Bash(cp test/receiver_mixed.txt test/receiver.txt)",
+      "Bash(rm -f build/intersection.txt)",
+      "Bash(cp test/sender_simple.txt test/sender.txt)",
+      "Bash(cp test/receiver_simple.txt test/receiver.txt)",
+      "Bash(cp sender_test.txt sender.txt)",
+      "Bash(cp receiver_test.txt receiver.txt)",
+      "Bash(cp test/sender_test.txt test/sender.txt)",
+      "Bash(cp test/receiver_test.txt test/receiver.txt)",
+      "Bash(timeout 10 bash -c 'echo -e \"receiver\\\\n\" | ./build/my_mqrpmt_psi')",
+      "Bash(./build/my_mqrpmt_psi)",
+      "Bash(timeout 10 bash -c 'echo -e \"receiver\\\\n\" | ./my_mqrpmt_psi')",
+      "Bash(pkill -f my_mqrpmt_psi)",
+      "Bash(chmod +x test_psi.sh)",
+      "Bash(./test_psi.sh)",
+      "Bash(chmod +x simple_test.sh)",
+      "Bash(./simple_test.sh)",
+      "Bash(make my_mqrpmt_psi)",
+      "Bash(echo \"Exit code: $?\")",
+      "Bash(mkdir -p build/test)",
+      "Bash(cp test/my_mqrpmt_psi.cpp build/test/my_mqrpmt_psi.cpp)",
+      "Bash(echo \"Compilation exit code: $?\")",
+      "Bash(tee compile.log)",
+      "Bash(make all *)",
+      "Bash(cp sender_numbers.txt sender.txt)",
+      "Bash(cp receiver_numbers.txt receiver.txt)"
+    ]
+  }
+}

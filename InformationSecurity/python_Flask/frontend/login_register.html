@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>信息安全作品登录</title>
+    <style>
+        /* 全局重置 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        /* 背景 */
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+
+            /* 设置背景图片 */
+            background-image: url('./background.jpg');
+            background-position: center center;
+            background-repeat: no-repeat;
+            background-size: cover;
+            background-attachment: fixed;
+        }
+
+        /* 卡片样式：半透明 + 圆角 + 阴影 + 内边距 */
+        .glass-card {
+            background: rgba(236, 232, 17, 0.5);
+            backdrop-filter: blur(3px);
+            border-radius: 2rem;
+            padding: 2rem 1.5rem;
+            width: 100%;
+            max-width: 450px;
+            box-shadow: 0 20px 35px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        /* 标题区域：让图片和文字在同一排 */
+        .title-wrapper {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .glass-card img {
+            width: 130px;
+            height: 50px;
+            object-fit: contain;
+        }
+
+        .glass-card h2 {
+            color: rgb(21, 2, 26);
+            font-weight: 600;
+            letter-spacing: -0.3px;
+            margin: 0;
+        }
+
+        /* 输入框样式 */
+        .glass-card input {
+            display: block;
+            margin: 15px auto;
+            width: 85%;
+            padding: 12px 15px;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+            outline: none;
+            font-size: 14px;
+        }
+
+        .glass-card input:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 5px rgba(102, 126, 234, 0.3);
+        }
+
+        /* 按钮样式 */
+        .glass-card button {
+            display: block;
+            margin: 20px auto 0;
+            width: 50%;
+            padding: 10px;
+            border: none;
+            border-radius: 8px;
+            background: #3b82f6;
+            color: white;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            transition: background 0.3s;
+        }
+
+        .glass-card button:hover {
+            background: #5a67d8;
+            transform: translateY(-2px);
+        }
+
+        .glass-card button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* 切换链接样式 */
+        .glass-card h3 {
+            text-align: center;
+            margin-top: 20px;
+            color: rgb(19, 2, 2);
+            font-weight: 500;
+            font-size: 17px;
+        }
+
+        .toggle-link:hover {
+            text-decoration: underline;
+            cursor: pointer;
+        }
+
+        /* 提示信息 */
+        .hint {
+            text-align: center;
+            color: #666;
+            font-size: 12px;
+            margin-top: 10px;
+        }
+
+        /* 隐藏元素 */
+        .hidden {
+            display: none !important;
+        }
+
+        /* 消息提示 */
+        .message {
+            padding: 10px 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            text-align: center;
+            font-size: 14px;
+        }
+
+        .message.error {
+            background: rgba(255, 0, 0, 0.2);
+            color: #8B0000;
+            border: 1px solid rgba(255, 0, 0, 0.3);
+        }
+
+        .message.success {
+            background: rgba(0, 128, 0, 0.2);
+            color: #006400;
+            border: 1px solid rgba(0, 128, 0, 0.3);
+        }
+    </style>
+</head>
+<body>
+    <!-- 登录卡片 -->
+    <div class="glass-card" id="loginBox">
+        <div class="title-wrapper">
+            <img src="./哈尔滨工业大学.png" alt="哈工大(深圳)">
+            <h2>登录</h2>
+        </div>
+        <div id="loginMessage" class="message hidden"></div>
+        <input id="loginUser" placeholder="用户名">
+        <input id="loginPass" type="password" placeholder="密码">
+        <button id="loginBtn" onclick="login()">登录</button>
+        <h3 class="toggle-link" onclick="showRegister()">没有账号？去注册</h3>
+    </div>
+
+    <!-- 注册卡片 -->
+    <div class="glass-card hidden" id="registerBox">
+        <div class="title-wrapper">
+            <img src="./哈尔滨工业大学.png" alt="哈工大(深圳)">
+            <h2>注册</h2>
+        </div>
+        <div id="regMessage" class="message hidden"></div>
+        <input id="regEmail" type="email" placeholder="邮箱（可选）">
+        <input id="regUser" placeholder="用户名（必填）">
+        <input id="regPass" type="password" placeholder="密码（必填）">
+        <input id="regPassConfirm" type="password" placeholder="确认密码">
+        <button id="regBtn" onclick="register()">注册</button>
+        <h3 class="toggle-link" onclick="showLogin()">已有账号？去登录</h3>
+    </div>
+
+    <script src="./api.js"></script>
+    <script src="./login_register.js"></script>
+</body>
+</html>
