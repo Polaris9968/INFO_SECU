@@ -62,16 +62,12 @@ async function initPage() {
 
 // ==================== 页面切换函数 ====================
 function showPage(page) {
-    // 隐藏所有页面
-    document.getElementById("homePage").style.display = "none";
-    document.getElementById("profilePage").style.display = "none";
-    document.getElementById("sortPage").style.display = "none";
-    document.getElementById("settingsPage").style.display = "none";
-    document.getElementById("adminPage").style.display = "none";
-
-    // 隐藏 iframe（切换回内部页面时）
-    const frame = document.getElementById("contentFrame");
-    if (frame) frame.style.display = "none";
+    // 隐藏所有页面(包括 3 个嵌入的子页面,SPA 化后)
+    ["homePage", "profilePage", "settingsPage", "adminPage",
+     "psiIntPage", "psiMatchPage", "psiUnionPage"].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.style.display = "none";
+    });
 
     // 移除所有导航按钮的active状态
     let navBtns = document.querySelectorAll('.nav-btn');
@@ -87,11 +83,6 @@ function showPage(page) {
         document.getElementById("profilePage").style.display = "block";
         navBtns.forEach(btn => {
             if (btn.textContent.trim() === '个人中心') btn.classList.add('active');
-        });
-    } else if (page === "sort") {
-        document.getElementById("sortPage").style.display = "block";
-        navBtns.forEach(btn => {
-            if (btn.textContent.trim() === '排序功能') btn.classList.add('active');
         });
     } else if (page === "settings") {
         document.getElementById("settingsPage").style.display = "block";
@@ -109,137 +100,31 @@ function showPage(page) {
             if (btn.textContent.trim() === '用户管理') btn.classList.add('active');
         });
         loadUserList();
+    } else if (page === "psiInt") {
+        document.getElementById("psiIntPage").style.display = "block";
+        navBtns.forEach(btn => {
+            if (btn.textContent.trim() === '隐私求交') btn.classList.add('active');
+        });
+        if (typeof PSI_INT !== 'undefined' && PSI_INT.init) PSI_INT.init();
+    } else if (page === "psiMatch") {
+        document.getElementById("psiMatchPage").style.display = "block";
+        navBtns.forEach(btn => {
+            if (btn.textContent.trim() === '集合匹配') btn.classList.add('active');
+        });
+        if (typeof PSI_MATCH !== 'undefined' && PSI_MATCH.init) PSI_MATCH.init();
+    } else if (page === "psiUnion") {
+        document.getElementById("psiUnionPage").style.display = "block";
+        navBtns.forEach(btn => {
+            if (btn.textContent.trim() === '隐私求并') btn.classList.add('active');
+        });
+        if (typeof PSI_UNION !== 'undefined' && PSI_UNION.init) PSI_UNION.init();
     }
 }
 
-// ==================== iframe 加载外部功能页 ====================
-// 协作排序/隐私求交/集合匹配/隐私求并点击时调用，不再跳转而是内嵌展示
-function loadInFrame(url, btnText) {
-    // 隐藏所有内部 panel（与 showPage 行为一致）
-    ["homePage", "profilePage", "sortPage", "settingsPage", "adminPage"].forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.style.display = "none";
-    });
+// loadInFrame 函数已删除(2026-07-01 重构为 SPA,子页面合并到主页)
+// 切换子页面请用 showPage('psiInt' | 'psiMatch' | 'psiUnion')
 
-    // 显示 iframe 并加载目标页面
-    const frame = document.getElementById("contentFrame");
-    if (!frame) {
-        console.error("contentFrame iframe 未找到");
-        return;
-    }
-    // 先隐藏（避免新页面加载期间旧内容"闪一下"），等 onload 后再显示
-    frame.style.display = "none";
-    // 清空旧 src（防浏览器复用旧帧），同步生效
-    frame.src = "about:blank";
-    // 设置新 src（异步加载）
-    frame.src = url;
 
-    // iframe 加载完后做一系列"无缝集成"处理：
-    //   1. 隐藏子页面的 top-bar（home 已经有侧边栏，子页面的顶栏多余）
-    //   2. 去掉 body 的 min-height: 100vh（避免 iframe 撑出滚动条）
-    //   3. 去掉 body 背景色（让 home 的渐变背景透过来，保持视觉统一）
-    //   4. iframe 高度 = 内容真实高度（让滚动条只出现在外层页面，不嵌套）
-    frame.onload = function () {
-        const adjust = () => {
-            try {
-                const doc = frame.contentDocument;
-                if (!doc || !doc.body) return;
-
-                // 1. 隐藏子页面的 top-bar
-                doc.querySelectorAll('.top-bar').forEach(el => el.style.display = 'none');
-
-                // 2 & 3. 去掉 body 的 min-height 和 background（让 home 背景透出）
-                doc.body.style.minHeight = '0';
-                doc.body.style.background = 'transparent';
-
-                // 4. iframe 高度跟随内容（让滚动条只在外层）
-                const realH = Math.max(
-                    doc.body.scrollHeight,
-                    doc.documentElement.scrollHeight
-                );
-                frame.style.height = (realH + 20) + 'px';
-
-                // 5. 加载完成，显示 iframe（避免旧内容闪一下）
-                frame.style.display = 'block';
-            } catch (e) {
-                console.warn('iframe 内容调整失败:', e);
-            }
-        };
-        adjust();
-        // 二次调整：子页面里如果有 fetch 动态渲染内容，渲染完后再算一次
-        setTimeout(adjust, 800);
-
-        // 持续监听 body 高度变化（小组列表异步加载/窗口 resize/数据更新等都会改变高度）
-        // 这样无论子页面内容什么时候变高，iframe 高度都跟得上，不会出现双滚动条
-        try {
-            const doc = frame.contentDocument;
-            if (doc && doc.body && typeof ResizeObserver !== 'undefined') {
-                if (frame._resizeObserver) frame._resizeObserver.disconnect();
-                const ro = new ResizeObserver(() => adjust());
-                ro.observe(doc.body);
-                frame._resizeObserver = ro;
-            }
-        } catch (e) {
-            // cross-origin 或其他原因导致 ResizeObserver 不可用时静默忽略
-        }
-    };
-
-    // 高亮当前按钮
-    document.querySelectorAll('.nav-btn').forEach(btn => {
-        btn.classList.remove('active');
-        if (btn.textContent.trim() === btnText) btn.classList.add('active');
-    });
-}
-
-// ==================== 数据排序处理函数 ====================
-async function sortTxtFile() {
-    const fileInput = document.getElementById('txtFileInput');
-    const file = fileInput.files[0];
-    const sortBtn = document.getElementById('sortBtn');
-
-    if (!file) {
-        alert('请先选择一个 TXT 文件');
-        return;
-    }
-
-    if (!file.name.endsWith('.txt')) {
-        alert('只支持 .txt 文件');
-        return;
-    }
-
-    sortBtn.disabled = true;
-    sortBtn.textContent = '处理中...';
-
-    try {
-        const result = await apiSortFile(file);
-
-        if (result.success) {
-            const data = result.data;
-
-            // 显示统计信息
-            document.getElementById('statCount').textContent = data.statistics.count;
-            document.getElementById('statMax').textContent = data.statistics.max;
-            document.getElementById('statMin').textContent = data.statistics.min;
-            document.getElementById('statAvg').textContent = data.statistics.average.toFixed(2);
-
-            // 显示排序结果
-            document.getElementById('sortedResult').textContent = data.sorted.join(' ');
-
-            // 显示结果容器
-            document.getElementById('resultContainer').classList.remove('hidden');
-        } else {
-            alert(result.message || '文件处理失败');
-            document.getElementById('resultContainer').classList.add('hidden');
-        }
-    } catch (error) {
-        console.error('排序错误:', error);
-        alert('网络错误，请检查后端是否启动');
-        document.getElementById('resultContainer').classList.add('hidden');
-    } finally {
-        sortBtn.disabled = false;
-        sortBtn.textContent = '排序并显示';
-    }
-}
 
 // ==================== 管理员功能 ====================
 

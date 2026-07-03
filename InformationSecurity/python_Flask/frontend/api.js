@@ -66,34 +66,7 @@ async function apiGetCurrentUser() {
     return await request("/me", { method: "GET" });
 }
 
-// ==================== 文件上传与排序 ====================
-async function apiSortFile(file) {
-    const token = sessionStorage.getItem("token");
 
-    const formData = new FormData();
-    formData.append("file", file);
-
-    try {
-        const response = await fetch(`${API_BASE_URL}/sort-file`, {
-            method: "POST",
-            headers: {
-                "Authorization": `Bearer ${token}`,
-            },
-            body: formData,
-        });
-
-        const data = await response.json();
-
-        if (response.ok) {
-            return { success: true, data };
-        } else {
-            return { success: false, message: data.error || "文件处理失败" };
-        }
-    } catch (error) {
-        console.error("文件上传错误:", error);
-        return { success: false, message: "网络连接失败" };
-    }
-}
 
 // ==================== 获取所有用户（管理员） ====================
 async function apiGetAllUsers() {
@@ -113,92 +86,17 @@ function logout() {
     window.location.href = "login_register.html";
 }
 
-// ==================== 小组管理 API ====================
 
-// 创建小组
-async function apiCreateGroup(groupName) {
-    return await request("/group/create", {
-        method: "POST",
-        body: JSON.stringify({ groupName }),
-    });
-}
 
-// 加入小组
-async function apiJoinGroup(groupId) {
-    return await request("/group/join", {
-        method: "POST",
-        body: JSON.stringify({ groupId }),
-    });
-}
 
-// 退出小组
-async function apiLeaveGroup(groupId) {
-    return await request("/group/leave", {
-        method: "POST",
-        body: JSON.stringify({ groupId }),
-    });
-}
-
-// 获取小组详情
-async function apiGetGroup(groupId) {
-    return await request(`/group/${groupId}`, { method: "GET" });
-}
-
-// 解散小组
-async function apiDeleteGroup(groupId) {
-    return await request(`/group/${groupId}`, { method: "DELETE" });
-}
-
-// 小组文件上传
-async function apiGroupUpload(groupId, file) {
-    const token = sessionStorage.getItem("token");
-
-    const formData = new FormData();
-    formData.append("file", file);
-    formData.append("groupId", groupId);
-
-    try {
-        const response = await fetch(`${API_BASE_URL}/group/upload`, {
-            method: "POST",
-            headers: {
-                "Authorization": `Bearer ${token}`,
-            },
-            body: formData,
-        });
-
-        const data = await response.json();
-
-        if (response.ok) {
-            return { success: true, data };
-        } else {
-            return { success: false, message: data.error || "文件上传失败" };
-        }
-    } catch (error) {
-        console.error("小组文件上传错误:", error);
-        return { success: false, message: "网络连接失败" };
-    }
-}
-
-// 获取我的小组列表
-async function apiGetMyGroups() {
-    return await request("/my-groups", { method: "GET" });
-}
-
-// 删除普通小组的上传记录（协作排序使用）
-async function apiDeleteGroupUpload(groupId) {
-    return await request("/group/upload", {
-        method: "DELETE",
-        body: JSON.stringify({ groupId }),
-    });
-}
 
 // ==================== 隐私求交 API ====================
 
 // 创建隐私求交小组
-async function apiCreatePSIGroup(groupName) {
+async function apiCreatePSIGroup(groupName, standardizeMode = 'auto') {
     return await request("/psi-group/create", {
         method: "POST",
-        body: JSON.stringify({ groupName }),
+        body: JSON.stringify({ groupName, standardizeMode }),
     });
 }
 
@@ -238,6 +136,21 @@ function apiPSIDownloadResultUrl(groupId) {
     return `${API_BASE_URL}/psi-group/${groupId}/download-result`;
 }
 
+// 2026-07-02:PSI 下载“运算结果”(按上传格式 .json/.csv/.txt)
+function apiPSIDownloadResultWithOriginalUrl(groupId) {
+    return `${API_BASE_URL}/psi-group/${groupId}/download-result-with-original`;
+}
+
+// 2026-07-02:PSU 下载“运算结果”(按上传格式 .json/.csv/.txt)
+function apiPSUDownloadResultWithOriginalUrl(groupId) {
+    return `${API_BASE_URL}/psi-union-group/${groupId}/download-result-with-original`;
+}
+
+// 2026-07-02:PSIMatch 下载“运算结果”(按上传格式 .json/.csv/.txt)
+function apiPSIMatchDownloadResultWithOriginalUrl(groupId) {
+    return `${API_BASE_URL}/psi-match-group/${groupId}/download-result-with-original`;
+}
+
 // 预览 PSU 己方密文前 20
 async function apiPSUPreviewCiphertext(groupId) {
     return await request(`/psi-union-group/${groupId}/preview-ciphertext`, { method: "GET" });
@@ -254,12 +167,82 @@ async function apiGetMyPSIGroups() {
 }
 
 // 上传文件到隐私求交小组
-async function apiPSIUpload(groupId, file) {
+// 2026-07-02 两阶段 JSON path 上传 - 阶段 1 探测
+async function apiPSIProbe(groupId, file) {
+    const token = sessionStorage.getItem("token");
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("groupId", groupId);
+    try {
+        const response = await fetch(`${API_BASE_URL}/psi-group/upload?probe=true`, {
+            method: "POST",
+            headers: { "Authorization": `Bearer ${token}` },
+            body: formData,
+        });
+        const data = await response.json();
+        if (response.ok) {
+            return { success: true, data };
+        }
+        return { success: false, message: data.error || "探测失败" };
+    } catch (error) {
+        console.error("PSI 探测错误:", error);
+        return { success: false, message: "网络连接失败" };
+    }
+}
+
+async function apiPSUUnionProbe(groupId, file) {
+    const token = sessionStorage.getItem("token");
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("groupId", groupId);
+    try {
+        const response = await fetch(`${API_BASE_URL}/psi-union-group/upload?probe=true`, {
+            method: "POST",
+            headers: { "Authorization": `Bearer ${token}` },
+            body: formData,
+        });
+        const data = await response.json();
+        if (response.ok) {
+            return { success: true, data };
+        }
+        return { success: false, message: data.error || "探测失败" };
+    } catch (error) {
+        console.error("PSU 探测错误:", error);
+        return { success: false, message: "网络连接失败" };
+    }
+}
+
+async function apiPSIMatchProbe(groupId, file) {
+    const token = sessionStorage.getItem("token");
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("groupId", groupId);
+    try {
+        const response = await fetch(`${API_BASE_URL}/psi-match-group/upload?probe=true`, {
+            method: "POST",
+            headers: { "Authorization": `Bearer ${token}` },
+            body: formData,
+        });
+        const data = await response.json();
+        if (response.ok) {
+            return { success: true, data };
+        }
+        return { success: false, message: data.error || "探测失败" };
+    } catch (error) {
+        console.error("PSIMatch 探测错误:", error);
+        return { success: false, message: "网络连接失败" };
+    }
+}
+
+async function apiPSIUpload(groupId, file, path = "") {
     const token = sessionStorage.getItem("token");
 
     const formData = new FormData();
     formData.append("file", file);
     formData.append("groupId", groupId);
+    if (path && path.trim()) {
+        formData.append("path", path.trim());
+    }
 
     try {
         const response = await fetch(`${API_BASE_URL}/psi-group/upload`, {
@@ -293,10 +276,10 @@ async function apiDeleteUpload(groupId) {
 // ==================== 隐私集合匹配 API ====================
 
 // 创建匹配小组
-async function apiCreatePSIMatchGroup(groupName) {
+async function apiCreatePSIMatchGroup(groupName, standardizeMode = 'auto') {
     return await request("/psi-match-group/create", {
         method: "POST",
-        body: JSON.stringify({ groupName }),
+        body: JSON.stringify({ groupName, standardizeMode }),
     });
 }
 
@@ -332,12 +315,15 @@ async function apiGetMyPSIMatchGroups() {
 }
 
 // 上传文件到匹配小组
-async function apiPSIMatchUpload(groupId, file) {
+async function apiPSIMatchUpload(groupId, file, path = "") {
     const token = sessionStorage.getItem("token");
 
     const formData = new FormData();
     formData.append("file", file);
     formData.append("groupId", groupId);
+    if (path && path.trim()) {
+        formData.append("path", path.trim());
+    }
 
     try {
         const response = await fetch(`${API_BASE_URL}/psi-match-group/upload`, {
@@ -376,10 +362,10 @@ async function apiPSIMatchPreviewCiphertext(groupId) {
 // ==================== 隐私集合求并 API ====================
 
 // 创建求并小组
-async function apiCreatePSIUnionGroup(groupName) {
+async function apiCreatePSIUnionGroup(groupName, standardizeMode = 'auto') {
     return await request("/psi-union-group/create", {
         method: "POST",
-        body: JSON.stringify({ groupName }),
+        body: JSON.stringify({ groupName, standardizeMode }),
     });
 }
 
@@ -415,12 +401,15 @@ async function apiGetMyPSIUnionGroups() {
 }
 
 // 上传文件到求并小组
-async function apiPSIUnionUpload(groupId, file) {
+async function apiPSIUnionUpload(groupId, file, path = "") {
     const token = sessionStorage.getItem("token");
 
     const formData = new FormData();
     formData.append("file", file);
     formData.append("groupId", groupId);
+    if (path && path.trim()) {
+        formData.append("path", path.trim());
+    }
 
     try {
         const response = await fetch(`${API_BASE_URL}/psi-union-group/upload`, {
@@ -449,4 +438,165 @@ async function apiDeletePSIUnionUpload(groupId) {
     return await request(`/psi-union-group/${groupId}/upload`, {
         method: "DELETE",
     });
+}
+// ============================================================
+// 多轮历史记录 API(2026-07-01:隐私求交小组)
+// ============================================================
+
+// 保存当前轮次到历史(receiver = creator 才能调)
+async function apiFinalizePSIRound(groupId) {
+    return await request(`/psi-group/${groupId}/finalize-round`, {
+        method: "POST",
+    });
+}
+
+// 2026-07-02:receiver 手动触发的开始运算(双方上传后,receiver 按此启动 Kunlun 计算)
+async function apiStartPSIComputation(groupId) {
+    return await request(`/psi-group/${groupId}/start-computation`, {
+        method: "POST",
+    });
+}
+
+// 拉取小组历史记录
+async function apiGetPSIGroupHistory(groupId) {
+    return await request(`/psi-group/${groupId}/history`, {
+        method: "GET",
+    });
+}
+
+// 下载某 round 的归档文件
+// type: my_plaintext | my_oprf | result
+function apiDownloadPSIRoundFile(groupId, roundNum, type) {
+    const token = sessionStorage.getItem("token");
+    if (!token) {
+        alert('未登录,请重新登录');
+        return;
+    }
+    const url = `/api/psi-group/${groupId}/round/${roundNum}/download?type=${type}`;
+    // 用 fetch + blob 触发下载,带 JWT
+    fetch(url, {
+        headers: { 'Authorization': `Bearer ${token}` }
+    })
+    .then(async response => {
+        if (!response.ok) {
+            const text = await response.text();
+            let msg = '下载失败';
+            try {
+                const d = JSON.parse(text);
+                msg = d.error || msg;
+            } catch(e) {}
+            throw new Error(msg + ' (HTTP ' + response.status + ')');
+        }
+        return response.blob();
+    })
+    .then(blob => {
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `psi_${groupId}_round${roundNum}_${type}.txt`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(a.href);
+    })
+    .catch(err => {
+        alert('下载失败: ' + err.message);
+    });
+}
+
+// ============================================================
+// PSU (隐私求并) 多轮历史 API
+// ============================================================
+
+async function apiFinalizePSUUnionRound(groupId) {
+    return await request(`/psi-union-group/${groupId}/finalize-round`, {
+        method: "POST",
+    });
+}
+
+// 2026-07-02:PSU receiver 手动触发开始运算
+async function apiStartPSUUnionComputation(groupId) {
+    return await request(`/psi-union-group/${groupId}/start-computation`, {
+        method: "POST",
+    });
+}
+
+async function apiGetPSUUnionGroupHistory(groupId) {
+    return await request(`/psi-union-group/${groupId}/history`, {
+        method: "GET",
+    });
+}
+
+function apiDownloadPSUUnionRoundFile(groupId, roundNum, type) {
+    const token = sessionStorage.getItem("token");
+    if (!token) { alert('未登录'); return; }
+    const url = `/api/psi-union-group/${groupId}/round/${roundNum}/download?type=${type}`;
+    fetch(url, { headers: { 'Authorization': `Bearer ${token}` } })
+    .then(async response => {
+        if (!response.ok) {
+            const text = await response.text();
+            let msg = '下载失败';
+            try { const d = JSON.parse(text); msg = d.error || msg; } catch(e) {}
+            throw new Error(msg + ' (HTTP ' + response.status + ')');
+        }
+        return response.blob();
+    })
+    .then(blob => {
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `psu_${groupId}_round${roundNum}_${type}.txt`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(a.href);
+    })
+    .catch(err => { alert('下载失败: ' + err.message); });
+}
+
+// ============================================================
+// PSIMatch (集合匹配) 多轮历史 API
+// ============================================================
+
+async function apiFinalizePSIMatchRound(groupId) {
+    return await request(`/psi-match-group/${groupId}/finalize-round`, {
+        method: "POST",
+    });
+}
+
+// 2026-07-02:PSIMatch receiver 手动触发开始运算
+async function apiStartPSIMatchComputation(groupId) {
+    return await request(`/psi-match-group/${groupId}/start-computation`, {
+        method: "POST",
+    });
+}
+
+async function apiGetPSIMatchGroupHistory(groupId) {
+    return await request(`/psi-match-group/${groupId}/history`, {
+        method: "GET",
+    });
+}
+
+function apiDownloadPSIMatchRoundFile(groupId, roundNum, type) {
+    const token = sessionStorage.getItem("token");
+    if (!token) { alert('未登录'); return; }
+    const url = `/api/psi-match-group/${groupId}/round/${roundNum}/download?type=${type}`;
+    fetch(url, { headers: { 'Authorization': `Bearer ${token}` } })
+    .then(async response => {
+        if (!response.ok) {
+            const text = await response.text();
+            let msg = '下载失败';
+            try { const d = JSON.parse(text); msg = d.error || msg; } catch(e) {}
+            throw new Error(msg + ' (HTTP ' + response.status + ')');
+        }
+        return response.blob();
+    })
+    .then(blob => {
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `psimatch_${groupId}_round${roundNum}_${type}.txt`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(a.href);
+    })
+    .catch(err => { alert('下载失败: ' + err.message); });
 }

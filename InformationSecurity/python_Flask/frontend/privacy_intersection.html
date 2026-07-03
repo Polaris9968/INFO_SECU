@@ -568,11 +568,19 @@ body {
                 <h2>📁 上传文件</h2>
                 <p style="color: #666; margin-bottom: 10px;">支持整数、小数、负数，以空格、换行或逗号分隔</p>
                 <div class="upload-area" onclick="document.getElementById('psiFileInput').click()">
-                    <input type="file" id="psiFileInput" accept=".txt" onchange="handlePSIFileUpload(this)">
+                    <input type="file" id="psiFileInput" accept=".txt,.csv,.json" onchange="handlePSIFileUpload(this)">
                     <div class="upload-icon">📄</div>
                     <div class="upload-text">点击选择 .txt 文件或拖拽文件到此处</div>
                 </div>
                 <button class="btn btn-primary" id="psiUploadBtn" onclick="uploadPSIFile()" style="margin-top: 15px;" disabled>上传文件</button>
+            </div>
+
+            <!-- 2026-07-02:receiver 手动触发运算+耗时区，独立卡不靠 psiResultCard 显示逻辑 -->
+            <div class="card" id="psiStartComputeCard" style="display:none;">
+                <h2>▶ 触发运算</h2>
+                <p style="color: #666; margin-bottom: 10px;">双方均已上传后，组长可手动触发 PSI 协议计算（receiver 身份才能看到按钮）</p>
+                <div id="psiDurationInfo" style="display:none; margin-top: 10px; color: #6b7280; font-size: 14px;">⏱ 耗时: <span id="psiDurationText"></span></div>
+                <button class="btn btn-success hidden" id="psiStartComputeBtn" onclick="startPSIComputation()" style="margin-top: 10px;">▶ 开始运算</button>
             </div>
 
             <!-- 求交结果 -->

@@ -18,7 +18,7 @@ body {
 }
 
 /* 顶部右侧用户信息 */
-.top-bar {
+body > .top-bar {
     position: fixed;
     top: 0;
     right: 0;
@@ -35,7 +35,7 @@ body {
 }
 
 /* 左侧边栏 */
-.sidebar {
+body > .sidebar {
     position: fixed;
     left: 0;
     top: 0;
@@ -197,7 +197,7 @@ body {
     display: none !important;
 }
 
-/* 排序结果区域 */
+
 .result-container {
     margin-top: 15px;
 }
@@ -207,15 +207,7 @@ body {
     color: #333;
 }
 
-#sortedResult {
-    background: #f0f0f0;
-    padding: 15px;
-    border-radius: 8px;
-    overflow-x: auto;
-    font-family: 'Courier New', monospace;
-    font-size: 14px;
-    line-height: 1.6;
-}
+
 
 /* 统计信息 */
 .stats-info {
@@ -243,12 +235,1625 @@ body {
     color: #1f2937;
 }
 
-/* iframe 内容区（用于显示协作排序/隐私求交等子页面） */
+/* iframe 内容区（用于显示隐私求交等子页面） */
 .content-frame {
     width: 100%;
     border: none;
     background: transparent;
     display: block;
+}
+
+/* ============================================================
+ * 子页面 CSS (2026-07-01 重构后,从原隐私求交/匹配/求并 3 个子页面合并)
+ * 通过 .psi-int-page / .psi-match-page / .psi-union-page 三个根容器 scope 隔离
+ * ============================================================ */
+
+/* ---------- 隐私求交 ---------- */
+.psi-int-page * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+.psi-int-page {
+    font-family: Arial, sans-serif;
+    background: #f9fafb;
+    color: #1f2937;
+}
+
+/* 顶部导航栏 */
+.psi-int-page .top-bar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 60px;
+    background: #ffffff;
+    border-bottom: 1px solid #e5e7eb;
+    color: #1f2937;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 25px;
+    z-index: 100;
+}
+
+.psi-int-page .top-bar .logo {
+    font-size: 20px;
+    font-weight: bold;
+}
+
+.psi-int-page .top-bar .user-info {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.psi-int-page .top-bar .back-btn {
+    padding: 8px 16px;
+    background: #f3f4f6;
+    border: none;
+    border-radius: 6px;
+    color: #1f2937;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.psi-int-page .top-bar .back-btn:hover {
+    background: #e5e7eb;
+}
+
+/* 主容器 */
+.psi-int-page .main-container {
+    display: block;
+    margin-top: 0;
+}
+
+/* 左侧边栏 */
+.psi-int-page .sidebar {
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    background: #f3f4f6;
+    padding: 25px;
+    box-sizing: border-box;
+}
+
+/* 右侧主区域(默认隐藏,选中小组后加 .active 才显示) */
+.psi-int-page .main-content {
+    display: none;
+    padding: 25px;
+}
+
+.psi-int-page .main-content.active {
+    display: block;
+}
+
+.psi-int-page .back-btn {
+    margin-bottom: 20px;
+    background: #6b7280;
+    color: #ffffff;
+}
+
+.psi-int-page .back-btn:hover {
+    background: #4b5563;
+}
+
+/* Tab 切换(2026-07-01:多轮历史) */
+.psi-int-page .tab-bar {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+    border-bottom: 2px solid #e5e7eb;
+    padding-bottom: 0;
+}
+
+.psi-int-page .tab-btn {
+    padding: 10px 20px;
+    background: transparent;
+    border: none;
+    border-bottom: 3px solid transparent;
+    cursor: pointer;
+    font-size: 14px;
+    color: #6b7280;
+    transition: all 0.2s;
+    margin-bottom: -2px;
+}
+
+.psi-int-page .tab-btn:hover {
+    color: #3b82f6;
+}
+
+.psi-int-page .tab-btn.active {
+    color: #3b82f6;
+    border-bottom-color: #3b82f6;
+    font-weight: 500;
+}
+
+.psi-int-page .tab-content {
+    display: block;
+}
+
+/* 历史记录列表 */
+.psi-int-page .history-list {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.psi-int-page .round-item {
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 15px 20px;
+    border-left: 4px solid #3b82f6;
+}
+
+.psi-int-page .round-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.psi-int-page .round-title {
+    font-weight: bold;
+    font-size: 15px;
+    color: #1f2937;
+}
+
+.psi-int-page .round-meta {
+    font-size: 12px;
+    color: #6b7280;
+}
+
+.psi-int-page .round-body {
+    margin-top: 8px;
+    font-size: 13px;
+    color: #4b5563;
+}
+
+.psi-int-page .round-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+    flex-wrap: wrap;
+}
+
+.psi-int-page .round-actions .btn {
+    margin: 0;
+    padding: 6px 12px;
+    font-size: 12px;
+}
+
+.psi-int-page .save-round-btn {
+    background: #10b981;
+    color: #ffffff;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.2s;
+    margin-right: 10px;
+}
+
+.psi-int-page .save-round-btn:hover {
+    background: #059669;
+    transform: scale(1.02);
+}
+
+.psi-int-page .save-round-hint {
+    font-size: 12px;
+    color: #6b7280;
+    margin-left: 10px;
+    font-style: italic;
+}
+
+/* 卡片样式 */
+.psi-int-page .card {
+    background: white;
+    color: #333;
+    padding: 20px;
+    border-radius: 12px;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 15px #f3f4f6;
+}
+
+.psi-int-page .card h2 {
+    margin-bottom: 15px;
+    color: #3b82f6;
+    font-size: 18px;
+}
+
+.psi-int-page .card h3 {
+    margin-bottom: 10px;
+    color: #3b82f6;
+    font-size: 16px;
+}
+
+/* 表单样式 */
+.psi-int-page .form-group {
+    margin-bottom: 15px;
+}
+
+.psi-int-page .form-group label {
+    display: block;
+    margin-bottom: 5px;
+    color: #666;
+    font-size: 14px;
+}
+
+.psi-int-page .form-group input {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 14px;
+}
+
+.psi-int-page .form-group input:focus {
+    outline: none;
+    border-color: #3b82f6;
+}
+
+/* 按钮样式 */
+.psi-int-page .btn {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.3s;
+    margin-right: 10px;
+}
+
+.psi-int-page .btn-primary {
+    background: #3b82f6;
+    color: #ffffff;
+    border: none;
+}
+
+.psi-int-page .btn-primary:hover {
+    transform: scale(1.02);
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.15);
+}
+
+.psi-int-page .btn-success {
+    background: #10b981;
+    color: #ffffff;
+    border: none;
+}
+
+.psi-int-page .btn-success:hover {
+    transform: scale(1.02);
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.15);
+}
+
+.psi-int-page .btn-warning {
+    background: #f59e0b;
+    color: #ffffff;
+    border: none;
+}
+
+.psi-int-page .btn-warning:hover {
+    transform: scale(1.02);
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.15);
+}
+
+.psi-int-page .btn-danger {
+    background: #ef4444;
+    color: #ffffff;
+    border: none;
+}
+
+.psi-int-page .btn-danger:hover {
+    background: #dc2626;
+}
+
+.psi-int-page .btn:disabled {
+    background: #e5e7eb;
+    color: #9ca3af;
+    border-color: #e5e7eb;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+/* 求交小组列表 */
+.psi-int-page .psi-group-list {
+    list-style: none;
+}
+
+.psi-int-page .psi-group-item {
+    padding: 12px;
+    background: #f5f5f5;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    cursor: pointer;
+    transition: all 0.3s;
+    border-left: 4px solid transparent;
+}
+
+.psi-int-page .psi-group-item:hover {
+    background: #e8f0fe;
+    border-left-color: #3b82f6;
+}
+
+.psi-int-page .psi-group-item.active {
+    background: #e8f0fe;
+    border-left-color: #3b82f6;
+}
+
+.psi-int-page .psi-group-name {
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.psi-int-page .psi-group-id {
+    font-family: 'Courier New', monospace;
+    font-size: 14px;
+    color: #666;
+}
+
+.psi-int-page .psi-group-meta {
+    font-size: 12px;
+    color: #888;
+    margin-top: 5px;
+}
+
+.psi-int-page .psi-group-code {
+    font-family: 'Courier New', monospace;
+    font-size: 24px;
+    font-weight: bold;
+    color: #3b82f6;
+    letter-spacing: 3px;
+    text-align: center;
+    padding: 10px;
+    background: #f0f7ff;
+    border-radius: 8px;
+    margin-bottom: 15px;
+}
+
+/* 文件上传区 */
+.psi-int-page .upload-area {
+    border: 2px dashed #ccc;
+    border-radius: 8px;
+    padding: 30px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s;
+    margin-bottom: 10px;
+}
+
+.psi-int-page .upload-area:hover {
+    border-color: #3b82f6;
+    background: #f0f7ff;
+}
+
+.psi-int-page .upload-area input[type="file"] {
+    display: none;
+}
+
+.psi-int-page .upload-icon {
+    font-size: 48px;
+    margin-bottom: 10px;
+}
+
+.psi-int-page .upload-text {
+    color: #666;
+    font-size: 14px;
+}
+
+/* 结果预览 */
+.psi-int-page .result-container {
+    margin-top: 20px;
+    padding: 15px;
+    background: #f9fafb;
+    border-radius: 8px;
+    border: 1px solid #e5e7eb;
+}
+
+.psi-int-page .result-container h3 {
+    margin-bottom: 10px;
+    color: #3b82f6;
+}
+
+.psi-int-page #psiIntersectionResult {
+    background: #f0f7ff;
+    padding: 15px;
+    border-radius: 6px;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+/* 状态指示器 */
+.psi-int-page .status-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.psi-int-page .status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+}
+
+.psi-int-page .status-dot.waiting {
+    background: #f59e0b;
+}
+
+.psi-int-page .status-dot.ready {
+    background: #10b981;
+}
+
+.psi-int-page .status-dot.processing {
+    background: #3b82f6;
+    animation: pulse 2s infinite;
+}
+
+.psi-int-page .status-text {
+    font-size: 14px;
+    color: #666;
+}
+
+/* 成员状态 */
+.psi-int-page .member-status {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px;
+    background: white;
+    border-radius: 6px;
+    margin-bottom: 8px;
+    border: 1px solid #e5e7eb;
+}
+
+.psi-int-page .member-name {
+    font-weight: 500;
+}
+
+.psi-int-page .progress-bar {
+    width: 100%;
+    height: 8px;
+    background: #e5e7eb;
+    border-radius: 4px;
+    overflow: hidden;
+    margin-top: 15px;
+}
+
+.psi-int-page .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #3b82f6, #10b981);
+    transition: width 0.5s;
+    width: 0;
+}
+
+.psi-int-page .psi-stats {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.psi-int-page .psi-stat-item {
+    background: #f0f7ff;
+    padding: 15px;
+    border-radius: 8px;
+    text-align: center;
+}
+
+.psi-int-page .psi-stat-label {
+    font-size: 12px;
+    color: #666;
+    margin-bottom: 5px;
+}
+
+.psi-int-page .psi-stat-value {
+    font-size: 24px;
+    font-weight: bold;
+    color: #3b82f6;
+}
+
+.psi-int-page .group-info-card {
+    background: linear-gradient(135deg, #f0f7ff, #e8f5e9);
+}
+
+.psi-int-page .group-info-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.psi-int-page .group-info-label {
+    color: #666;
+    font-size: 14px;
+}
+
+.psi-int-page .group-info-value {
+    font-weight: 500;
+    color: #1f2937;
+}
+
+.psi-int-page .action-buttons {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.psi-int-page .empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: #999;
+}
+
+.psi-int-page .empty-state-icon {
+    font-size: 48px;
+    margin-bottom: 10px;
+}
+
+.psi-int-page .hint-text {
+    font-size: 12px;
+    color: #aaa;
+    margin-top: 5px;
+}
+
+.psi-int-page .hidden {
+    display: none !important;
+}
+
+.psi-int-page .auto-refresh {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: #10b981;
+}
+
+.psi-int-page .refresh-dot {
+    width: 6px;
+    height: 6px;
+    background: #10b981;
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+}
+
+.psi-int-page .refresh-btn {
+    background: #3b82f6;
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 12px;
+}
+
+.psi-int-page .spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid #e5e7eb;
+    border-top-color: #3b82f6;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 20px auto;
+}
+
+.psi-int-page .error-message {
+    background: #fee2e2;
+    color: #991b1b;
+    padding: 10px;
+    border-radius: 6px;
+    margin: 10px 0;
+}
+
+.psi-int-page .success-message {
+    background: #d1fae5;
+    color: #065f46;
+    padding: 10px;
+    border-radius: 6px;
+    margin: 10px 0;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* ---------- 集合匹配 ---------- */
+.psi-match-page * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+.psi-match-page {
+    font-family: Arial, sans-serif;
+    background: #f9fafb;
+    color: #1f2937;
+}
+
+/* 顶部导航栏 */
+.psi-match-page .top-bar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 60px;
+    background: #ffffff;
+    border-bottom: 1px solid #e5e7eb;
+    color: #1f2937;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 25px;
+    z-index: 100;
+}
+
+.psi-match-page .top-bar .logo {
+    font-size: 20px;
+    font-weight: bold;
+}
+
+.psi-match-page .top-bar .user-info {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.psi-match-page .top-bar .back-btn {
+    padding: 8px 16px;
+    background: #f3f4f6;
+    border: none;
+    border-radius: 6px;
+    color: #1f2937;
+    cursor: pointer;
+}
+
+.psi-match-page .main-container {
+    display: block;
+    margin-top: 0;
+}
+
+.psi-match-page .sidebar {
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    background: #f3f4f6;
+    padding: 25px;
+    box-sizing: border-box;
+}
+
+.psi-match-page .main-content {
+    display: none;
+    padding: 25px;
+}
+
+.psi-match-page .main-content.active {
+    display: block;
+}
+
+.psi-match-page .back-btn {
+    margin-bottom: 20px;
+    background: #6b7280;
+    color: #ffffff;
+}
+
+.psi-match-page .back-btn:hover {
+    background: #4b5563;
+}
+
+.psi-match-page .card {
+    background: white;
+    color: #333;
+    padding: 20px;
+    border-radius: 12px;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 15px #f3f4f6;
+}
+
+/* Tab 切换 */
+.psi-match-page .tab-bar {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+    border-bottom: 2px solid #e5e7eb;
+    padding-bottom: 0;
+}
+
+.psi-match-page .tab-btn {
+    padding: 10px 20px;
+    background: transparent;
+    border: none;
+    border-bottom: 3px solid transparent;
+    cursor: pointer;
+    font-size: 14px;
+    color: #6b7280;
+    transition: all 0.2s;
+    margin-bottom: -2px;
+}
+
+.psi-match-page .tab-btn:hover {
+    color: #3b82f6;
+}
+
+.psi-match-page .tab-btn.active {
+    color: #3b82f6;
+    border-bottom-color: #3b82f6;
+    font-weight: 500;
+}
+
+.psi-match-page .tab-content {
+    display: block;
+}
+
+.psi-match-page .history-list {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.psi-match-page .round-item {
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 15px 20px;
+    border-left: 4px solid #3b82f6;
+}
+
+.psi-match-page .round-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.psi-match-page .round-title {
+    font-weight: bold;
+    font-size: 15px;
+    color: #1f2937;
+}
+
+.psi-match-page .round-meta {
+    font-size: 12px;
+    color: #6b7280;
+}
+
+.psi-match-page .round-body {
+    margin-top: 8px;
+    font-size: 13px;
+    color: #4b5563;
+}
+
+.psi-match-page .round-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+    flex-wrap: wrap;
+}
+
+.psi-match-page .round-actions .btn {
+    margin: 0;
+    padding: 6px 12px;
+    font-size: 12px;
+}
+
+.psi-match-page .save-round-btn {
+    background: #10b981;
+    color: #ffffff;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.2s;
+    margin-right: 10px;
+}
+
+.psi-match-page .save-round-btn:hover {
+    background: #059669;
+    transform: scale(1.02);
+}
+
+.psi-match-page .save-round-hint {
+    font-size: 12px;
+    color: #6b7280;
+    margin-left: 10px;
+    font-style: italic;
+}
+
+.psi-match-page .card h2 {
+    margin-bottom: 15px;
+    color: #3b82f6;
+    font-size: 18px;
+}
+
+.psi-match-page .card h3 {
+    margin-bottom: 10px;
+    color: #3b82f6;
+    font-size: 16px;
+}
+
+.psi-match-page .form-group {
+    margin-bottom: 15px;
+}
+
+.psi-match-page .form-group label {
+    display: block;
+    margin-bottom: 5px;
+    color: #666;
+    font-size: 14px;
+}
+
+.psi-match-page .form-group input {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 14px;
+}
+
+.psi-match-page .form-group input:focus {
+    outline: none;
+    border-color: #3b82f6;
+}
+
+.psi-match-page .btn {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.3s;
+    margin-right: 10px;
+}
+
+.psi-match-page .btn-primary {
+    background: #3b82f6;
+    color: #ffffff;
+}
+
+.psi-match-page .btn-primary:hover {
+    transform: scale(1.02);
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.15);
+}
+
+.psi-match-page .btn-success {
+    background: #10b981;
+    color: #ffffff;
+}
+
+.psi-match-page .btn-success:hover {
+    transform: scale(1.02);
+}
+
+.psi-match-page .btn-warning {
+    background: #f59e0b;
+    color: #ffffff;
+}
+
+.psi-match-page .btn-danger {
+    background: #ef4444;
+    color: #ffffff;
+}
+
+.psi-match-page .btn:disabled {
+    background: #e5e7eb;
+    color: #9ca3af;
+    cursor: not-allowed;
+}
+
+.psi-match-page .group-list {
+    list-style: none;
+}
+
+.psi-match-page .group-item {
+    padding: 12px;
+    background: #f5f5f5;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    cursor: pointer;
+    transition: all 0.3s;
+    border-left: 4px solid transparent;
+}
+
+.psi-match-page .group-item:hover {
+    background: #e8f0fe;
+    border-left-color: #3b82f6;
+}
+
+.psi-match-page .group-item.active {
+    background: #e8f0fe;
+    border-left-color: #3b82f6;
+}
+
+.psi-match-page .group-name {
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.psi-match-page .group-id {
+    font-family: 'Courier New', monospace;
+    font-size: 14px;
+    color: #666;
+}
+
+.psi-match-page .group-code {
+    font-family: 'Courier New', monospace;
+    font-size: 24px;
+    font-weight: bold;
+    color: #3b82f6;
+    letter-spacing: 3px;
+    text-align: center;
+    padding: 10px;
+    background: #f0f7ff;
+    border-radius: 8px;
+    margin-bottom: 15px;
+}
+
+.psi-match-page .upload-area {
+    border: 2px dashed #ccc;
+    border-radius: 8px;
+    padding: 30px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s;
+    margin-bottom: 10px;
+}
+
+.psi-match-page .upload-area:hover {
+    border-color: #3b82f6;
+    background: #f0f7ff;
+}
+
+.psi-match-page .upload-area input[type="file"] {
+    display: none;
+}
+
+.psi-match-page .upload-icon {
+    font-size: 48px;
+    margin-bottom: 10px;
+}
+
+.psi-match-page .upload-text {
+    color: #666;
+    font-size: 14px;
+}
+
+.psi-match-page .result-container {
+    margin-top: 20px;
+    padding: 15px;
+    background: #f9fafb;
+    border-radius: 8px;
+    border: 1px solid #e5e7eb;
+}
+
+.psi-match-page .stats-info {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 15px;
+    margin-top: 20px;
+}
+
+.psi-match-page .stat-item {
+    background: #f0f7ff;
+    padding: 15px;
+    border-radius: 8px;
+    text-align: center;
+}
+
+.psi-match-page .stat-label {
+    font-size: 12px;
+    color: #666;
+    margin-bottom: 5px;
+}
+
+.psi-match-page .stat-value {
+    font-size: 24px;
+    font-weight: bold;
+    color: #3b82f6;
+}
+
+.psi-match-page .group-info-card {
+    background: linear-gradient(135deg, #f0f7ff, #e8f5e9);
+}
+
+.psi-match-page .group-info-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.psi-match-page .group-info-label {
+    color: #666;
+    font-size: 14px;
+}
+
+.psi-match-page .group-info-value {
+    font-weight: 500;
+    color: #1f2937;
+}
+
+.psi-match-page .member-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.psi-match-page .member-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 12px;
+    background: #f9fafb;
+    border-radius: 6px;
+    border: 1px solid #e5e7eb;
+}
+
+.psi-match-page .member-name {
+    font-weight: 500;
+}
+
+.psi-match-page .action-buttons {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.psi-match-page .empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: #999;
+}
+
+.psi-match-page .empty-state-icon {
+    font-size: 48px;
+    margin-bottom: 10px;
+}
+
+.psi-match-page .hint-text {
+    font-size: 12px;
+    color: #aaa;
+    margin-top: 5px;
+}
+
+.psi-match-page .hidden {
+    display: none !important;
+}
+
+.psi-match-page .auto-refresh {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: #10b981;
+}
+
+.psi-match-page .refresh-dot {
+    width: 6px;
+    height: 6px;
+    background: #10b981;
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+}
+
+.psi-match-page .upload-record {
+    padding: 8px 12px;
+    background: #f9fafb;
+    border-radius: 6px;
+    margin-bottom: 6px;
+    border-left: 3px solid #10b981;
+}
+
+.psi-match-page .error-message {
+    background: #fee2e2;
+    color: #991b1b;
+    padding: 10px;
+    border-radius: 6px;
+    margin: 10px 0;
+}
+
+.psi-match-page .success-message {
+    background: #d1fae5;
+    color: #065f46;
+    padding: 10px;
+    border-radius: 6px;
+    margin: 10px 0;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* ---------- 隐私求并 ---------- */
+.psi-union-page * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+.psi-union-page {
+    font-family: Arial, sans-serif;
+    background: #f9fafb;
+    color: #1f2937;
+}
+
+/* 顶部导航栏 */
+.psi-union-page .top-bar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 60px;
+    background: #ffffff;
+    border-bottom: 1px solid #e5e7eb;
+    color: #1f2937;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 25px;
+    z-index: 100;
+}
+
+.psi-union-page .top-bar .logo {
+    font-size: 20px;
+    font-weight: bold;
+}
+
+.psi-union-page .top-bar .user-info {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.psi-union-page .top-bar .back-btn {
+    padding: 8px 16px;
+    background: #f3f4f6;
+    border: none;
+    border-radius: 6px;
+    color: #1f2937;
+    cursor: pointer;
+}
+
+.psi-union-page .main-container {
+    display: block;
+    margin-top: 0;
+}
+
+.psi-union-page .sidebar {
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    background: #f3f4f6;
+    padding: 25px;
+    box-sizing: border-box;
+}
+
+.psi-union-page .main-content {
+    display: none;
+    padding: 25px;
+}
+
+.psi-union-page .main-content.active {
+    display: block;
+}
+
+.psi-union-page .back-btn {
+    margin-bottom: 20px;
+    background: #6b7280;
+    color: #ffffff;
+}
+
+.psi-union-page .back-btn:hover {
+    background: #4b5563;
+}
+
+.psi-union-page .card {
+    background: white;
+    color: #333;
+    padding: 20px;
+    border-radius: 12px;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 15px #f3f4f6;
+}
+
+/* Tab 切换 */
+.psi-union-page .tab-bar {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+    border-bottom: 2px solid #e5e7eb;
+    padding-bottom: 0;
+}
+
+.psi-union-page .tab-btn {
+    padding: 10px 20px;
+    background: transparent;
+    border: none;
+    border-bottom: 3px solid transparent;
+    cursor: pointer;
+    font-size: 14px;
+    color: #6b7280;
+    transition: all 0.2s;
+    margin-bottom: -2px;
+}
+
+.psi-union-page .tab-btn:hover {
+    color: #3b82f6;
+}
+
+.psi-union-page .tab-btn.active {
+    color: #3b82f6;
+    border-bottom-color: #3b82f6;
+    font-weight: 500;
+}
+
+.psi-union-page .tab-content {
+    display: block;
+}
+
+.psi-union-page .history-list {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.psi-union-page .round-item {
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 15px 20px;
+    border-left: 4px solid #3b82f6;
+}
+
+.psi-union-page .round-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.psi-union-page .round-title {
+    font-weight: bold;
+    font-size: 15px;
+    color: #1f2937;
+}
+
+.psi-union-page .round-meta {
+    font-size: 12px;
+    color: #6b7280;
+}
+
+.psi-union-page .round-body {
+    margin-top: 8px;
+    font-size: 13px;
+    color: #4b5563;
+}
+
+.psi-union-page .round-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+    flex-wrap: wrap;
+}
+
+.psi-union-page .round-actions .btn {
+    margin: 0;
+    padding: 6px 12px;
+    font-size: 12px;
+}
+
+.psi-union-page .save-round-btn {
+    background: #10b981;
+    color: #ffffff;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.2s;
+    margin-right: 10px;
+}
+
+.psi-union-page .save-round-btn:hover {
+    background: #059669;
+    transform: scale(1.02);
+}
+
+.psi-union-page .save-round-hint {
+    font-size: 12px;
+    color: #6b7280;
+    margin-left: 10px;
+    font-style: italic;
+}
+
+.psi-union-page .card h2 {
+    margin-bottom: 15px;
+    color: #3b82f6;
+    font-size: 18px;
+}
+
+.psi-union-page .card h3 {
+    margin-bottom: 10px;
+    color: #3b82f6;
+    font-size: 16px;
+}
+
+.psi-union-page .form-group {
+    margin-bottom: 15px;
+}
+
+.psi-union-page .form-group label {
+    display: block;
+    margin-bottom: 5px;
+    color: #666;
+    font-size: 14px;
+}
+
+.psi-union-page .form-group input {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 14px;
+}
+
+.psi-union-page .form-group input:focus {
+    outline: none;
+    border-color: #3b82f6;
+}
+
+.psi-union-page .btn {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.3s;
+    margin-right: 10px;
+}
+
+.psi-union-page .btn-primary {
+    background: #3b82f6;
+    color: #ffffff;
+}
+
+.psi-union-page .btn-primary:hover {
+    transform: scale(1.02);
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.15);
+}
+
+.psi-union-page .btn-success {
+    background: #10b981;
+    color: #ffffff;
+}
+
+.psi-union-page .btn-warning {
+    background: #f59e0b;
+    color: #ffffff;
+}
+
+.psi-union-page .btn-danger {
+    background: #ef4444;
+    color: #ffffff;
+}
+
+.psi-union-page .btn:disabled {
+    background: #e5e7eb;
+    color: #9ca3af;
+    cursor: not-allowed;
+}
+
+.psi-union-page .psi-group-list {
+    list-style: none;
+}
+
+.psi-union-page .psi-group-item {
+    padding: 12px;
+    background: #f5f5f5;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    cursor: pointer;
+    transition: all 0.3s;
+    border-left: 4px solid transparent;
+}
+
+.psi-union-page .psi-group-item:hover {
+    background: #e8f0fe;
+    border-left-color: #3b82f6;
+}
+
+.psi-union-page .psi-group-item.active {
+    background: #e8f0fe;
+    border-left-color: #3b82f6;
+}
+
+.psi-union-page .psi-group-name {
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.psi-union-page .psi-group-code {
+    font-family: 'Courier New', monospace;
+    font-size: 24px;
+    font-weight: bold;
+    color: #3b82f6;
+    letter-spacing: 3px;
+    text-align: center;
+    padding: 10px;
+    background: #f0f7ff;
+    border-radius: 8px;
+    margin-bottom: 15px;
+}
+
+.psi-union-page .upload-area {
+    border: 2px dashed #ccc;
+    border-radius: 8px;
+    padding: 30px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s;
+    margin-bottom: 10px;
+}
+
+.psi-union-page .upload-area:hover {
+    border-color: #3b82f6;
+    background: #f0f7ff;
+}
+
+.psi-union-page .upload-area input[type="file"] {
+    display: none;
+}
+
+.psi-union-page .upload-icon {
+    font-size: 48px;
+    margin-bottom: 10px;
+}
+
+.psi-union-page .upload-text {
+    color: #666;
+    font-size: 14px;
+}
+
+.psi-union-page .result-container {
+    margin-top: 20px;
+    padding: 15px;
+    background: #f9fafb;
+    border-radius: 8px;
+    border: 1px solid #e5e7eb;
+}
+
+.psi-union-page .psi-stats {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.psi-union-page .psi-stat-item {
+    background: #f0f7ff;
+    padding: 15px;
+    border-radius: 8px;
+    text-align: center;
+}
+
+.psi-union-page .psi-stat-label {
+    font-size: 12px;
+    color: #666;
+    margin-bottom: 5px;
+}
+
+.psi-union-page .psi-stat-value {
+    font-size: 24px;
+    font-weight: bold;
+    color: #3b82f6;
+}
+
+.psi-union-page .group-info-card {
+    background: linear-gradient(135deg, #f0f7ff, #e8f5e9);
+}
+
+.psi-union-page .group-info-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.psi-union-page .group-info-label {
+    color: #666;
+    font-size: 14px;
+}
+
+.psi-union-page .group-info-value {
+    font-weight: 500;
+    color: #1f2937;
+}
+
+.psi-union-page .progress-bar {
+    width: 100%;
+    height: 8px;
+    background: #e5e7eb;
+    border-radius: 4px;
+    overflow: hidden;
+    margin-top: 15px;
+}
+
+.psi-union-page .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #3b82f6, #10b981);
+    transition: width 0.5s;
+    width: 0;
+}
+
+.psi-union-page .status-text {
+    font-size: 14px;
+    color: #666;
+}
+
+.psi-union-page .action-buttons {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.psi-union-page .empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: #999;
+}
+
+.psi-union-page .empty-state-icon {
+    font-size: 48px;
+    margin-bottom: 10px;
+}
+
+.psi-union-page .hint-text {
+    font-size: 12px;
+    color: #aaa;
+    margin-top: 5px;
+}
+
+.psi-union-page .hidden {
+    display: none !important;
+}
+
+.psi-union-page .error-message {
+    background: #fee2e2;
+    color: #991b1b;
+    padding: 10px;
+    border-radius: 6px;
+    margin: 10px 0;
+}
+
+.psi-union-page .success-message {
+    background: #d1fae5;
+    color: #065f46;
+    padding: 10px;
+    border-radius: 6px;
+    margin: 10px 0;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
 }
 </style>
 </head>
@@ -264,11 +1869,10 @@ body {
 <div class="sidebar">
     <div class="nav-btn active" onclick="showPage('home')">首页</div>
     <div class="nav-btn" onclick="showPage('profile')">个人中心</div>
-    <div class="nav-btn" onclick="showPage('sort')">排序功能</div>
-    <div class="nav-btn" onclick="loadInFrame('collaborate.html', '协作排序')">协作排序</div>
-    <div class="nav-btn" onclick="loadInFrame('privacy_intersection.html', '隐私求交')">隐私求交</div>
-    <div class="nav-btn" onclick="loadInFrame('psi_match.html', '集合匹配')">集合匹配</div>
-    <div class="nav-btn" onclick="loadInFrame('privacy_union.html', '隐私求并')">隐私求并</div>
+    
+    <div class="nav-btn" onclick="showPage('psiInt')">隐私求交</div>
+    <div class="nav-btn" onclick="showPage('psiMatch')">集合匹配</div>
+    <div class="nav-btn" onclick="showPage('psiUnion')">隐私求并</div>
     <div class="nav-btn" onclick="showPage('settings')">设置</div>
     <div class="nav-btn hidden" id="adminNavBtn" onclick="showPage('admin')">用户管理</div>
 </div>
@@ -279,12 +1883,11 @@ body {
     <!-- 首页 -->
     <div id="homePage">
         <div class="card">
-            <h2>欢迎使用数字排序与隐私集合操作系统</h2>
+            <h2>欢迎使用隐私集合操作系统</h2>
             <p>这是一个基于 Flask 后端的 Web 应用，提供以下功能：</p>
             <ul style="margin-top: 15px; padding-left: 20px;">
                 <li>用户注册与登录（JWT 认证）</li>
-                <li>TXT 文件上传与数字排序</li>
-                <li>多人协作排序功能</li>
+                
                 <li>隐私求交 - 双方安全计算共同元素</li>
                 <li>隐私集合匹配 - 子集判断</li> 
                 <li>管理员用户管理功能</li>
@@ -305,38 +1908,7 @@ body {
         </div>
     </div>
 
-     <!-- 排序功能 -->
-    <div id="sortPage" style="display: none;">
-        <div class="card">
-            <h2>📁 TXT 文件排序工具</h2>
-            <p style="color: #666; margin-bottom: 10px;">支持整数、小数、负数，以空格、换行或逗号分隔</p>
-            <input type="file" id="txtFileInput" accept=".txt">
-            <button class="btn btn-color btn-green" id="sortBtn" onclick="sortTxtFile()">排序并显示</button>
-
-            <div id="resultContainer" class="result-container hidden">
-                <div class="stats-info">
-                    <div class="stat-item">
-                        <div class="stat-label">数字总数</div>
-                        <div class="stat-value" id="statCount">-</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-label">最大值</div>
-                        <div class="stat-value" id="statMax">-</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-label">最小值</div>
-                        <div class="stat-value" id="statMin">-</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-label">平均值</div>
-                        <div class="stat-value" id="statAvg">-</div>
-                    </div>
-                </div>
-                <h3 style="margin-top: 20px;">排序结果（从大到小）</h3>
-                <pre id="sortedResult"></pre>
-            </div>
-        </div>
-    </div>
+     
 
     <!-- 设置 -->
     <div id="settingsPage" style="display:none;">
@@ -386,13 +1958,567 @@ body {
         </div>
     </div>
 
-    <!-- iframe 内容区（加载协作排序/隐私求交/集合匹配/隐私求并等子页面） -->
-    <iframe id="contentFrame" class="content-frame" style="display:none;"></iframe>
+    <!-- 子页面内容(从隐私求交/匹配/求并 3 个子页面合并,2026-07-01 重构) -->
+    <div id="psiIntPage" class="psi-int-page" style="display:none;">
+        <!-- 顶部导航栏 -->
+        <!-- 主容器 -->
+        <div class="main-container">
+
+            <!-- 左侧边栏 -->
+            <div class="sidebar">
+                <!-- 创建/加入求交小组 -->
+                <div class="card">
+                    <h2>创建或加入求交小组</h2>
+                    <div class="form-group">
+                        <label>小组名称（创建新小组）</label>
+                        <input type="text" id="psiGroupNameInput" placeholder="输入小组名称" maxlength="50">
+                    </div>
+                    <div class="form-group">
+                        <label>标准化方式（仅创建时可设，之后不可改）</label>
+                        <select id="psiStandardizeMode" class="form-control">
+                            <option value="auto" selected>自动（数字直接用，文字 SHA-256 哈希）</option>
+                            <option value="number_only">只保留数字（文字丢弃）</option>
+                            <option value="text_all">全部当文字哈希</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-primary" onclick="createPSIGroup()">创建小组</button>
+                    <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #eee;">
+                        <div class="form-group">
+                            <label>小组ID（加入现有小组）</label>
+                            <input type="text" id="psiGroupIdInput" placeholder="输入4位小组ID" maxlength="4" style="text-transform: uppercase;">
+                        </div>
+                        <button class="btn btn-success" onclick="joinPSIGroup()">加入小组</button>
+                    </div>
+                </div>
+
+                <!-- 我的求交小组列表 -->
+                <div class="card">
+                    <h2>我的求交小组</h2>
+                    <ul class="psi-group-list" id="myPSIGroupList">
+                        <li class="empty-state">加载中...</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- 右侧主区域 -->
+            <div class="main-content">
+
+                <!-- 返回按钮(仅在选中小组后显示) -->
+                <button class="btn btn-secondary back-btn" id="psiIntBackBtn" onclick="PSI_INT.backToList()" style="display:none;">← 返回小组列表</button>
+
+                <!-- Tab 切换(2026-07-01:多轮历史) -->
+                <div class="tab-bar">
+                    <button class="tab-btn active" id="psiIntTabCurrent" onclick="PSI_INT.switchTab('current')">📋 当前操作</button>
+                    <button class="tab-btn" id="psiIntTabHistory" onclick="PSI_INT.switchTab('history')" style="display:none;">📚 历史记录 (<span id="psiIntHistoryCount">0</span>)</button>
+                </div>
+
+                <!-- 当前操作 tab -->
+                <div id="psiIntCurrentTab" class="tab-content">
+                <div id="currentPSIGroupSection">
+                    <div class="card group-info-card">
+                        <h2>🔒 <span id="currentPSIGroupName"></span></h2>
+                        <div class="psi-group-code" id="currentPSIGroupId">ABCD</div>
+                        <div class="group-info-item">
+                            <span class="group-info-label">组长</span>
+                            <span class="group-info-value" id="psiGroupCreator"></span>
+                        </div>
+                        <div class="group-info-item">
+                            <span class="group-info-label">成员数量</span>
+                            <span class="group-info-value">2人</span>
+                        </div>
+                        <div class="group-info-item">
+                            <span class="group-info-label">创建时间</span>
+                            <span class="group-info-value" id="psiGroupCreatedAt"></span>
+                        </div>
+                        <div class="group-info-item">
+                            <span class="group-info-label">标准化方式</span>
+                            <span class="group-info-value" id="psiGroupStandardizeMode"></span>
+                        </div>
+                    </div>
+
+                    <!-- 成员状态 -->
+                    <div class="card">
+                        <h2>👥 成员状态</h2>
+                        <div id="memberStatusList">
+                            <!-- 动态生成 -->
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="progressFill"></div>
+                        </div>
+                        <div class="status-text" id="progressText">等待成员上传文件...</div>
+                    </div>
+
+                    <!-- 文件上传 -->
+                    <div class="card">
+                        <h2>📁 上传文件</h2>
+                        <p style="color: #666; margin-bottom: 10px;">支持整数、小数、负数，以空格、换行或逗号分隔</p>
+                        <div class="upload-area" onclick="document.getElementById('psiFileInput').click()">
+                            <input type="file" id="psiFileInput" accept=".txt,.csv,.json" onchange="handlePSIFileUpload(this)">
+                            <div class="upload-icon">📄</div>
+                            <div class="upload-text">点击选择 .txt / .csv / .json 文件或拖拽文件到此处</div>
+                        </div>
+                        <div id="psiPathSelectorArea" style="margin-top:12px;display:none;">
+                            <label for="psiJSONPathSelect" style="font-size:13px;color:#555;display:block;margin-bottom:6px;">
+                                请选择 JSON 提取字段(探测器在 2026-07-02 扫描出的所有潜在路径):
+                            </label>
+                            <select id="psiJSONPathSelect" style="width:100%;padding:6px 10px;border:1px solid #d0d7de;border-radius:6px;font-size:13px;">
+                            </select>
+                            <input type="hidden" id="psiJSONPathInput" value="">
+                            <div id="psiPathSample" style="font-size:12px;color:#666;margin-top:4px;"></div>
+                        </div>
+                        <button class="btn btn-primary" id="psiUploadBtn" onclick="uploadPSIFile()" style="margin-top: 15px;" disabled>上传文件</button>
+                    </div>
+
+                    <!-- 2026-07-02:receiver 手动触发运算+耗时区（独立卡，不依赖 psiResultCard 显示逻辑） -->
+                    <div class="card" id="psiStartComputeCard" style="display:none;">
+                        <h2>▶ 触发运算</h2>
+                        <p style="color: #666; margin-bottom: 10px;">双方均已上传后，组长可手动触发 PSI 协议计算（receiver 身份才能看到按钮）</p>
+                        <div id="psiDurationInfo" style="display:none; margin-top: 10px; color: #6b7280; font-size: 14px;">⏱ 耗时: <span id="psiDurationText"></span></div>
+                        <button class="btn btn-success hidden" id="psiStartComputeBtn" onclick="startPSIComputation()" style="margin-top: 10px;">▶ 开始运算</button>
+                    </div>
+
+                    <!-- 求交结果 -->
+                    <div class="card" id="psiResultCard">
+                        <div class="psi-stats">
+                            <div class="psi-stat-item">
+                                <div class="psi-stat-label">我的元素数</div>
+                                <div class="psi-stat-value" id="myElementsCount">0</div>
+                            </div>
+                            <div class="psi-stat-item">
+                                <div class="psi-stat-label">对方元素数</div>
+                                <div class="psi-stat-value" id="otherElementsCount">0</div>
+                            </div>
+                            <div class="psi-stat-item">
+                                <div class="psi-stat-label">共同元素数</div>
+                                <div class="psi-stat-value" id="commonElementsCount">0</div>
+                            </div>
+                            <div class="psi-stat-item">
+                                <div class="psi-stat-label">完成度</div>
+                                <div class="psi-stat-value" id="completionRate">0%</div>
+                            </div>
+                            <!-- 2026-07-02:耗时可视化，跟四个主指标同级 -->
+                            <div class="psi-stat-item" id="psiDurationStatItem" style="display:none;">
+                                <div class="psi-stat-label">⏱ 耗时</div>
+                                <div class="psi-stat-value" id="psiDurationStat">—</div>
+                            </div>
+                        </div>
+
+                        <!-- 明文 / 密文 / 结果预览 -->
+                        <div class="result-container" id="psiPlaintextPreviewContainer" style="display:none;">
+                            <h3>📄 己方明文前 20 个</h3>
+                            <pre id="psiPlaintextPreview">等待上传后显示...</pre>
+                        </div>
+
+                        <div class="result-container" id="psiCiphertextPreviewContainer" style="display:none;">
+                            <h3>🔒 己方密文前 20 个（OPRF 编码后）</h3>
+                            <pre id="psiCiphertextPreview">等待计算后显示...</pre>
+                        </div>
+
+                        <div class="result-container" id="psiResultPreviewContainer" style="display:none;">
+                            <h3>🎯 交集前 20 个</h3>
+                            <pre id="psiResultPreview"></pre>
+                        </div>
+
+                        <button class="btn btn-primary" id="psiDownloadBtn" style="display:none; margin-top: 15px;" onclick="downloadPSIResult()">📥 下载完整结果</button>
+                        <h2 style="margin-top: 20px;">🎯 隐私求交结果</h2>
+                    </div>
+
+                    <!-- 操作按钮 -->
+                    <div class="card">
+                        <h2>⚙️ 操作</h2>
+                        <div class="action-buttons">
+                            <button class="btn btn-warning hidden" id="deleteMyUploadBtn" onclick="deleteMyUpload()">🗑️ 删除我的上传</button>
+                            <button class="btn btn-danger hidden" id="leavePSIGroupBtn" onclick="leaveCurrentPSIGroup()">退出小组</button>
+                            <button class="btn btn-danger hidden" id="deletePSIGroupBtn" onclick="deleteCurrentPSIGroup()">解散小组</button>
+                            <!-- 2026-07-01:多轮历史(只有 receiver 才能点) -->
+                            <button class="save-round-btn hidden" id="psiIntSaveRoundBtn" onclick="PSI_INT.saveAndStartNewRound()">💾 保存当前结果,开始下一轮</button>
+                            <span class="save-round-hint hidden" id="psiIntSaveRoundHint">(只有 receiver 可以保存)</span>
+                        </div>
+                    </div>
+
+                </div>
+                </div><!-- /psiIntCurrentTab -->
+
+                <!-- 历史记录 tab(2026-07-01:多轮历史) -->
+                <div id="psiIntHistoryTab" class="tab-content" style="display:none;">
+                    <div id="psiIntHistoryList" class="history-list">
+                        <!-- 动态渲染历史 round -->
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+    </div>
+
+    <div id="psiMatchPage" class="psi-match-page" style="display:none;">
+        <div class="main-container">
+
+            <div class="sidebar">
+                <div class="card">
+                    <h2>创建或加入匹配小组</h2>
+                    <div class="form-group">
+                        <label>小组名称（创建新小组）</label>
+                        <input type="text" id="psiMatchGroupNameInput" placeholder="输入小组名称" maxlength="50">
+                    </div>
+                    <div class="form-group">
+                        <label>标准化方式（仅创建时可设）</label>
+                        <select id="psiMatchStandardizeMode" class="form-control">
+                            <option value="auto" selected>自动（数字直接用，文字 SHA-256 哈希）</option>
+                            <option value="number_only">只保留数字（文字丢弃）</option>
+                            <option value="text_all">全部当文字哈希</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-primary" onclick="createPSIMatchGroup()">创建小组</button>
+                    <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #eee;">
+                        <div class="form-group">
+                            <label>小组ID（加入现有小组）</label>
+                            <input type="text" id="psiMatchGroupIdInput" placeholder="输入4位小组ID" maxlength="4" style="text-transform: uppercase;">
+                        </div>
+                        <button class="btn btn-success" onclick="joinPSIMatchGroup()">加入小组</button>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h2>我的匹配小组</h2>
+                    <div class="auto-refresh" style="margin-bottom: 10px;">
+                        <div class="refresh-dot"></div>
+                        <span>自动刷新中</span>
+                    </div>
+                    <ul class="group-list" id="myPSIMatchGroupList">
+                        <li class="empty-state">加载中...</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="main-content">
+
+                <!-- 返回按钮(仅在选中小组后显示) -->
+                <button class="btn btn-secondary back-btn" id="psiMatchBackBtn" onclick="PSI_MATCH.backToList()" style="display:none;">← 返回小组列表</button>
+
+                <!-- Tab 切换 -->
+                <div class="tab-bar">
+                    <button class="tab-btn active" id="psiMatchTabCurrent" onclick="PSI_MATCH.switchTab('current')">📋 当前操作</button>
+                    <button class="tab-btn" id="psiMatchTabHistory" onclick="PSI_MATCH.switchTab('history')" style="display:none;">📚 历史记录 (<span id="psiMatchHistoryCount">0</span>)</button>
+                </div>
+
+                <!-- 当前操作 tab -->
+                <div id="psiMatchCurrentTab" class="tab-content">
+                <div id="currentPSIMatchGroupSection">
+                    <div class="card group-info-card">
+                        <h2>🔒 <span id="currentPSIMatchGroupName"></span></h2>
+                        <div class="group-code" id="currentPSIMatchGroupId">ABCD</div>
+                        <div class="group-info-item">
+                            <span class="group-info-label">组长</span>
+                            <span class="group-info-value" id="psiMatchGroupCreator"></span>
+                        </div>
+                        <div class="group-info-item">
+                            <span class="group-info-label">成员数量</span>
+                            <span class="group-info-value">2人</span>
+                        </div>
+                        <div class="group-info-item">
+                            <span class="group-info-label">创建时间</span>
+                            <span class="group-info-value" id="psiMatchGroupCreatedAt"></span>
+                        </div>
+                        <div class="group-info-item">
+                            <span class="group-info-label">标准化方式</span>
+                            <span class="group-info-value" id="psiMatchGroupStandardizeMode"></span>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <h2>👥 小组成员</h2>
+                        <div class="member-list" id="psiMatchMemberList">
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <h2>📁 上传文件</h2>
+                        <p style="color: #666; margin-bottom: 10px;">支持整数、小数、字符串、中文，以空格、换行或逗号分隔</p>
+                        <div class="upload-area" onclick="document.getElementById('psiMatchFileInput').click()">
+                            <input type="file" id="psiMatchFileInput" accept=".txt,.csv,.json" onchange="handlePSIMatchFileUpload(this)">
+                            <div class="upload-icon">📄</div>
+                            <div class="upload-text">点击选择 .txt / .csv / .json 文件或拖拽文件到此处</div>
+                        </div>
+                        <div id="psiMatchPathSelectorArea" style="display:none; margin-top:10px;">
+                            <label for="psiMatchJSONPathSelect" style="font-size:13px;color:#555;display:block;margin-bottom:6px;">选择 JSON 字段路径:</label>
+                            <select id="psiMatchJSONPathSelect" style="width:100%;padding:6px 10px;border:1px solid #d0d7de;border-radius:6px;font-size:13px;"></select>
+                            <input type="hidden" id="psiMatchJSONPathInput">
+                            <div id="psiMatchPathSample" style="font-size:12px;color:#666;margin-top:4px;"></div>
+                        </div>
+                        <button class="btn btn-primary" id="psiMatchUploadBtn" onclick="uploadPSIMatchFile()" style="margin-top: 15px;" disabled>上传并判断子集</button>
+                    </div>
+
+                    <!-- 2026-07-02:PSIMatch 独立运算触发卡 -->
+                    <div class="card" id="psiMatchStartComputeCard" style="display:none;">
+                        <h2>▶ 触发运算</h2>
+                        <p style="color: #666; margin-bottom: 10px;">双方均已上传后，组长可手动触发 PSI-Match 运算</p>
+                        <div id="psiMatchDurationInfo" style="display:none; margin-top: 10px; color: #6b7280; font-size: 14px;">⏱ 耗时: <span id="psiMatchDurationText"></span></div>
+                        <button class="btn btn-success hidden" id="psiMatchStartComputeBtn" onclick="startPSIMatchComputation()" style="margin-top: 10px;">▶ 开始运算</button>
+                    </div>
+
+                    <div class="card" id="psiMatchResultCard">
+                        <!-- 明文预览（己方） -->
+                        <div class="result-container" id="matchMyPlaintextContainer" style="display:none;">
+                            <h3>📄 己方明文前 20 个</h3>
+                            <pre id="matchMyPlaintext">等待上传后显示...</pre>
+                        </div>
+
+                        <!-- 密文预览（己方，来自 PSI-Card OPRF） -->
+                        <div class="result-container" id="matchCiphertextContainer" style="display:none;">
+                            <h3>🔒 己方密文前 20 个（PSI-Card OPRF）</h3>
+                            <pre id="matchCiphertext">等待计算后显示...</pre>
+                        </div>
+
+                        <!-- 子集判定 -->
+                        <div class="result-container" id="matchResultContainer" style="display:none;">
+                            <h3>🔍 子集判断结果</h3>
+                            <pre id="subsetMatchResult"></pre>
+                        </div>
+
+                        <!-- 统计信息（放在最下面） -->
+                        <div class="stats-info">
+                            <div class="stat-item">
+                                <div class="stat-label">我的元素数</div>
+                                <div class="stat-value" id="myMatchElementsCount">0</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-label">对方元素数</div>
+                                <div class="stat-value" id="otherMatchElementsCount">0</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-label">交集基数</div>
+                                <div class="stat-value" id="intersectionCardinalityCount">0</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-label">缺失数</div>
+                                <div class="stat-value" id="missingMatchElementsCount">0</div>
+                            </div>
+                            <!-- 2026-07-02:耗时 stat -->
+                            <div class="stat-item" id="psiMatchDurationStatItem" style="display:none;">
+                                <div class="stat-label">⏱ 耗时</div>
+                                <div class="stat-value" id="psiMatchDurationStat">—</div>
+                            </div>
+                        </div>
+
+                        <!-- 2026-07-02:PSIMatch 下载运算结果(唯一按钮,按上传格式输出) -->
+                        <button class="btn btn-primary" id="psiMatchDownloadBtn" style="display:none; margin-top: 15px;" onclick="downloadPSIMatchResult()">📥 下载完整结果</button>
+                    </div>
+
+                    <div class="card">
+                        <h2>📋 上传记录</h2>
+                        <div id="psiMatchUploadRecords">
+                            <div class="empty-state">暂无上传记录</div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <h2>⚙️ 操作</h2>
+                        <div class="action-buttons">
+                            <button class="btn btn-success" onclick="refreshCurrentPSIMatchGroup()">🔄 刷新</button>
+                            <button class="btn btn-danger hidden" id="leavePSIMatchGroupBtn" onclick="leaveCurrentPSIMatchGroup()">退出小组</button>
+                            <button class="btn btn-danger hidden" id="deletePSIMatchGroupBtn" onclick="deleteCurrentPSIMatchGroup()">解散小组</button>
+                            <button class="save-round-btn hidden" id="psiMatchSaveRoundBtn" onclick="PSI_MATCH.saveAndStartNewRound()">💾 保存当前结果,开始下一轮</button>
+                            <span class="save-round-hint hidden" id="psiMatchSaveRoundHint">(只有 receiver 可以保存)</span>
+                        </div>
+                    </div>
+
+                </div>
+                </div><!-- /psiMatchCurrentTab -->
+
+                <!-- 历史记录 tab -->
+                <div id="psiMatchHistoryTab" class="tab-content" style="display:none;">
+                    <div id="psiMatchHistoryList" class="history-list">
+                        <!-- 动态渲染历史 round -->
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+    </div>
+
+    <div id="psiUnionPage" class="psi-union-page" style="display:none;">
+        <div class="main-container">
+
+            <div class="sidebar">
+                <div class="card">
+                    <h2>创建或加入求并小组</h2>
+                    <div class="form-group">
+                        <label>小组名称（创建新小组）</label>
+                        <input type="text" id="psiUnionGroupNameInput" placeholder="输入小组名称" maxlength="50">
+                    </div>
+                    <div class="form-group">
+                        <label>标准化方式（仅创建时可设）</label>
+                        <select id="psiUnionStandardizeMode" class="form-control">
+                            <option value="auto" selected>自动（数字直接用，文字 SHA-256 哈希）</option>
+                            <option value="number_only">只保留数字（文字丢弃）</option>
+                            <option value="text_all">全部当文字哈希</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-primary" onclick="createPSIUnionGroup()">创建小组</button>
+                    <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #eee;">
+                        <div class="form-group">
+                            <label>小组ID（加入现有小组）</label>
+                            <input type="text" id="psiUnionGroupIdInput" placeholder="输入4位小组ID" maxlength="4" style="text-transform: uppercase;">
+                        </div>
+                        <button class="btn btn-success" onclick="joinPSIUnionGroup()">加入小组</button>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h2>我的求并小组</h2>
+                    <ul class="psi-group-list" id="myPSIUnionGroupList">
+                        <li class="empty-state">加载中...</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="main-content">
+
+                <!-- 返回按钮(仅在选中小组后显示) -->
+                <button class="btn btn-secondary back-btn" id="psiUnionBackBtn" onclick="PSI_UNION.backToList()" style="display:none;">← 返回小组列表</button>
+
+                <!-- Tab 切换 -->
+                <div class="tab-bar">
+                    <button class="tab-btn active" id="psiUnionTabCurrent" onclick="PSI_UNION.switchTab('current')">📋 当前操作</button>
+                    <button class="tab-btn" id="psiUnionTabHistory" onclick="PSI_UNION.switchTab('history')" style="display:none;">📚 历史记录 (<span id="psiUnionHistoryCount">0</span>)</button>
+                </div>
+
+                <!-- 当前操作 tab -->
+                <div id="psiUnionCurrentTab" class="tab-content">
+                <div id="currentPSIUnionGroupSection">
+                    <div class="card group-info-card">
+                        <h2>🔓 <span id="currentPSIUnionGroupName"></span></h2>
+                        <div class="psi-group-code" id="currentPSIUnionGroupId">ABCD</div>
+                        <div class="group-info-item">
+                            <span class="group-info-label">组长</span>
+                            <span class="group-info-value" id="psiUnionGroupCreator"></span>
+                        </div>
+                        <div class="group-info-item">
+                            <span class="group-info-label">成员数量</span>
+                            <span class="group-info-value">2人</span>
+                        </div>
+                        <div class="group-info-item">
+                            <span class="group-info-label">创建时间</span>
+                            <span class="group-info-value" id="psiUnionGroupCreatedAt"></span>
+                        </div>
+                        <div class="group-info-item">
+                            <span class="group-info-label">标准化方式</span>
+                            <span class="group-info-value" id="psiUnionGroupStandardizeMode"></span>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <h2>👥 成员状态</h2>
+                        <div id="unionMemberStatusList"></div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="unionProgressFill"></div>
+                        </div>
+                        <div class="status-text" id="unionProgressText">等待成员上传文件...</div>
+                    </div>
+
+                    <div class="card">
+                        <h2>📁 上传文件</h2>
+                        <p style="color: #666; margin-bottom: 10px;">支持整数、小数、字符串、中文，以空格、换行或逗号分隔</p>
+                        <div class="upload-area" onclick="document.getElementById('psiUnionFileInput').click()">
+                            <input type="file" id="psiUnionFileInput" accept=".txt,.csv,.json" onchange="handlePSIUnionFileUpload(this)">
+                            <div class="upload-icon">📄</div>
+                            <div class="upload-text">点击选择 .txt / .csv / .json 文件或拖拽文件到此处</div>
+                        </div>
+                        <div id="psiUnionPathSelectorArea" style="display:none; margin-top:10px;">
+                            <label for="psiUnionJSONPathSelect" style="font-size:13px;color:#555;display:block;margin-bottom:6px;">选择 JSON 字段路径:</label>
+                            <select id="psiUnionJSONPathSelect" style="width:100%;padding:6px 10px;border:1px solid #d0d7de;border-radius:6px;font-size:13px;"></select>
+                            <input type="hidden" id="psiUnionJSONPathInput">
+                            <div id="psiUnionPathSample" style="font-size:12px;color:#666;margin-top:4px;"></div>
+                        </div>
+                        <button class="btn btn-primary" id="psiUnionUploadBtn" onclick="uploadPSIUnionFile()" style="margin-top: 15px;" disabled>上传文件</button>
+                    </div>
+
+                    <!-- 2026-07-02:PSU 独立运算触发卡 -->
+                    <div class="card" id="psuStartComputeCard" style="display:none;">
+                        <h2>▶ 触发运算</h2>
+                        <p style="color: #666; margin-bottom: 10px;">双方均已上传后，组长可手动触发 PSI-Union 协议计算</p>
+                        <div id="psuDurationInfo" style="display:none; margin-top: 10px; color: #6b7280; font-size: 14px;">⏱ 耗时: <span id="psuDurationText"></span></div>
+                        <button class="btn btn-success hidden" id="psuStartComputeBtn" onclick="startPSUUnionComputation()" style="margin-top: 10px;">▶ 开始运算</button>
+                    </div>
+
+                    <div class="card" id="psiUnionResultCard">
+                        <div class="psi-stats">
+                            <div class="psi-stat-item">
+                                <div class="psi-stat-label">我的元素数</div>
+                                <div class="psi-stat-value" id="myUnionElementsCount">0</div>
+                            </div>
+                            <div class="psi-stat-item">
+                                <div class="psi-stat-label">对方元素数</div>
+                                <div class="psi-stat-value" id="otherUnionElementsCount">0</div>
+                            </div>
+                            <div class="psi-stat-item">
+                                <div class="psi-stat-label">并集元素数</div>
+                                <div class="psi-stat-value" id="unionElementsCount">0</div>
+                            </div>
+                            <div class="psi-stat-item">
+                                <div class="psi-stat-label">完成度</div>
+                                <div class="psi-stat-value" id="unionCompletionRate">0%</div>
+                            </div>
+                            <!-- 2026-07-02:耗时 stat -->
+                            <div class="psi-stat-item" id="psuDurationStatItem" style="display:none;">
+                                <div class="psi-stat-label">⏱ 耗时</div>
+                                <div class="psi-stat-value" id="psuDurationStat">—</div>
+                            </div>
+                        </div>
+
+                        <!-- 明文 / 密文 / 并集预览 -->
+                        <div class="result-container" id="psuPlaintextPreviewContainer" style="display:none;">
+                            <h3>📄 己方明文前 20 个</h3>
+                            <pre id="psuPlaintextPreview">等待上传后显示...</pre>
+                        </div>
+
+                        <div class="result-container" id="psuCiphertextPreviewContainer" style="display:none;">
+                            <h3>🔒 己方密文前 20 个（OPRF 编码后）</h3>
+                            <pre id="psuCiphertextPreview">等待计算后显示...</pre>
+                        </div>
+
+                        <div class="result-container" id="psuUnionPreviewContainer" style="display:none;">
+                            <h3>🔗 并集前 20 个</h3>
+                            <pre id="psuUnionPreview"></pre>
+                        </div>
+
+                        <button class="btn btn-primary" id="psuDownloadBtn" style="display:none; margin-top: 15px;" onclick="downloadPSUResult()">📥 下载完整结果</button>
+                        <h2 style="margin-top: 20px;">🎯 隐私求并结果</h2>
+                    </div>
+
+                    <div class="card">
+                        <h2>⚙️ 操作</h2>
+                        <div class="action-buttons">
+                            <button class="btn btn-warning hidden" id="deleteMyUnionUploadBtn" onclick="deleteMyUnionUpload()">🗑️ 删除我的上传</button>
+                            <button class="btn btn-danger hidden" id="leavePSIUnionGroupBtn" onclick="leaveCurrentPSIUnionGroup()">退出小组</button>
+                            <button class="btn btn-danger hidden" id="deletePSIUnionGroupBtn" onclick="deleteCurrentPSIUnionGroup()">解散小组</button>
+                            <button class="save-round-btn hidden" id="psiUnionSaveRoundBtn" onclick="PSI_UNION.saveAndStartNewRound()">💾 保存当前结果,开始下一轮</button>
+                            <span class="save-round-hint hidden" id="psiUnionSaveRoundHint">(只有 receiver 可以保存)</span>
+                        </div>
+                    </div>
+
+                </div>
+                </div><!-- /psiUnionCurrentTab -->
+
+                <!-- 历史记录 tab -->
+                <div id="psiUnionHistoryTab" class="tab-content" style="display:none;">
+                    <div id="psiUnionHistoryList" class="history-list">
+                        <!-- 动态渲染历史 round -->
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+    </div>
 
 </div>
 
 <script src="./api.js"></script>
 <script src="./home.js"></script>
+<script src="./home-psi-pages.js"></script>
 
 </body>
 </html>

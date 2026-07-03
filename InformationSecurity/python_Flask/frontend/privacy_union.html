@@ -541,11 +541,19 @@ body {
                 <h2>📁 上传文件</h2>
                 <p style="color: #666; margin-bottom: 10px;">支持整数、小数、字符串、中文，以空格、换行或逗号分隔</p>
                 <div class="upload-area" onclick="document.getElementById('psiUnionFileInput').click()">
-                    <input type="file" id="psiUnionFileInput" accept=".txt" onchange="handlePSIUnionFileUpload(this)">
+                    <input type="file" id="psiUnionFileInput" accept=".txt,.csv,.json" onchange="handlePSIUnionFileUpload(this)">
                     <div class="upload-icon">📄</div>
                     <div class="upload-text">点击选择 .txt 文件或拖拽文件到此处</div>
                 </div>
                 <button class="btn btn-primary" id="psiUnionUploadBtn" onclick="uploadPSIUnionFile()" style="margin-top: 15px;" disabled>上传文件</button>
+            </div>
+
+            <!-- 2026-07-02:receiver 手动触发运算+耗时区，独立卡 -->
+            <div class="card" id="psuStartComputeCard" style="display:none;">
+                <h2>▶ 触发运算</h2>
+                <p style="color: #666; margin-bottom: 10px;">双方均已上传后，组长可手动触发 PSI-Union 协议计算</p>
+                <div id="psuDurationInfo" style="display:none; margin-top: 10px; color: #6b7280; font-size: 14px;">⏱ 耗时: <span id="psuDurationText"></span></div>
+                <button class="btn btn-success hidden" id="psuStartComputeBtn" onclick="startPSUUnionComputation()" style="margin-top: 10px;">▶ 开始运算</button>
             </div>
 
             <div class="card" id="psiUnionResultCard">
