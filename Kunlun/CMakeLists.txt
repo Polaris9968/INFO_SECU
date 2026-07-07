@@ -159,6 +159,13 @@ TARGET_LINK_LIBRARIES(my_mqrpmt_psu_receiver ${OPENSSL_LIBRARIES} OpenMP::OpenMP
 ADD_EXECUTABLE(my_mqrpmt_psu_sender test/my_mqrpmt_psu_sender.cpp)
 TARGET_LINK_LIBRARIES(my_mqrpmt_psu_sender ${OPENSSL_LIBRARIES} OpenMP::OpenMP_CXX dl pthread)
 
+# PSI-Sum (Private Set Intersection Sum)
+ADD_EXECUTABLE(my_mqrpmt_psi_sum_receiver test/my_mqrpmt_psi_sum_receiver.cpp)
+TARGET_LINK_LIBRARIES(my_mqrpmt_psi_sum_receiver ${OPENSSL_LIBRARIES} OpenMP::OpenMP_CXX dl pthread)
+
+ADD_EXECUTABLE(my_mqrpmt_psi_sum_sender test/my_mqrpmt_psi_sum_sender.cpp)
+TARGET_LINK_LIBRARIES(my_mqrpmt_psi_sum_sender ${OPENSSL_LIBRARIES} OpenMP::OpenMP_CXX dl pthread)
+
 # mcl
 # add_executable(test_mcl test/test_mcl.cpp)
 # target_link_libraries(test_mcl libmcl.a libgmp.a)
