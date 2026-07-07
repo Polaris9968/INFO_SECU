@@ -601,3 +601,87 @@ function apiDownloadPSIMatchRoundFile(groupId, roundNum, type) {
     })
     .catch(err => { alert('下载失败: ' + err.message); });
 }
+
+// ============================================================
+// PSI-Sum (隐私求和) API -- 2026-07-07 新增
+// ============================================================
+
+async function apiCreatePSISumGroup(groupName, standardizeMode = 'auto') {
+    return await request("/psi-sum-group/create", {
+        method: "POST",
+        body: JSON.stringify({ groupName, standardizeMode }),
+    });
+}
+
+async function apiJoinPSISumGroup(groupId) {
+    return await request("/psi-sum-group/join", {
+        method: "POST",
+        body: JSON.stringify({ groupId }),
+    });
+}
+
+async function apiLeavePSISumGroup(groupId) {
+    return await request("/psi-sum-group/leave", {
+        method: "POST",
+        body: JSON.stringify({ groupId }),
+    });
+}
+
+async function apiGetPSISumGroup(groupId) {
+    return await request(`/psi-sum-group/${groupId}`, { method: "GET" });
+}
+
+async function apiDeletePSISumGroup(groupId) {
+    return await request(`/psi-sum-group/${groupId}`, { method: "DELETE" });
+}
+
+async function apiStartPSISumComputation(groupId) {
+    return await request(`/psi-sum-group/${groupId}/start-computation`, {
+        method: "POST",
+    });
+}
+
+async function apiGetMyPSISumGroups() {
+    return await request("/my-psi-sum-groups", { method: "GET" });
+}
+
+// 上传 PSI-Sum 文件 (set 可选带 valueFile)
+// valueFile: 可选 File 对象，与 set 行数必须一致
+async function apiPSISumUpload(groupId, file, valueFile = null) {
+    const token = sessionStorage.getItem("token");
+
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("groupId", groupId);
+    if (valueFile) {
+        formData.append("valueFile", valueFile);
+    }
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/psi-sum-group/upload`, {
+            method: "POST",
+            headers: {
+                "Authorization": `Bearer ${token}`,
+            },
+            body: formData,
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            return { success: true, data };
+        } else {
+            return { success: false, message: data.error || "文件上传失败" };
+        }
+    } catch (error) {
+        console.error("PSI-Sum 文件上传错误:", error);
+        return { success: false, message: "网络连接失败" };
+    }
+}
+
+async function apiDeletePSISumUpload(groupId) {
+    return await request(`/psi-sum-group/${groupId}/delete-upload`, {
+        method: "POST",
+    });
+}
+
