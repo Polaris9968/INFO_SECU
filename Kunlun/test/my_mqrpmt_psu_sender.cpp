@@ -1,5 +1,5 @@
 // Kunlun 项目路径常量（项目根目录前缀）
-#define KUNLUN_BASE_DIR "/root/projects/INFO_SECU_1.0/Kunlun"
+#define KUNLUN_BASE_DIR "/root/projects/INFO_SECU_1.0.2/Kunlun"
 #include "../mpc/pso/mqrpmt_psu.hpp"
 #include "../crypto/setup.hpp"
 #include "../utility/print.hpp"
