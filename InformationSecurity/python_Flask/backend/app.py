@@ -4763,6 +4763,149 @@ class PSISumGroupManager:
                 })
         return result
 
+    # ==================== 2026-07-07: 多轮历史 ====================
+    @staticmethod
+    def finalize_round(group_id, completed_by):
+        """归档当前轮次到 rounds, 清空 uploads + sum_result, 让双方可重新上传。
+        Returns: (success, round_record_or_error_msg)
+        """
+        data = PSISumGroupManager.load_groups()
+        for group in data["groups"]:
+            if group["id"] != group_id:
+                continue
+            if 'rounds' not in group:
+                group['rounds'] = []
+            kunlun_dir = os.path.join(Config.KUNLUN_PSI_SUM_DATA_DIR, f"group_{group_id}")
+            round_num = len(group['rounds']) + 1
+            archive_dir = os.path.join(kunlun_dir, f"round{round_num}")
+            os.makedirs(archive_dir, exist_ok=True)
+            archive_files = {}
+            # 2026-07-07: 归档 PSI-Sum 特有的 6 个文件
+            # receiver.txt / sender.txt (标准化后的集合)
+            # original_receiver.txt / original_sender.txt (原始 token)
+            # value_receiver.txt / value_sender.txt (关联数值)
+            # cardinality.txt / sum.txt (运算输出)
+            for fname in ('receiver.txt', 'sender.txt',
+                          'original_receiver.txt', 'original_sender.txt',
+                          'value_receiver.txt', 'value_sender.txt',
+                          'cardinality.txt', 'sum.txt',
+                          'sender_value.txt'):
+                src = os.path.join(kunlun_dir, fname)
+                if os.path.exists(src):
+                    dst = os.path.join(archive_dir, fname)
+                    import shutil
+                    shutil.copy2(src, dst)
+                    archive_files[fname.replace('.txt', '')] = dst
+
+            cardinality = 0
+            sum_val = None
+            if 'cardinality' in archive_files:
+                try:
+                    with open(archive_files['cardinality'], 'r', encoding='utf-8') as f:
+                        cardinality = int(f.read().strip() or 0)
+                except Exception:
+                    pass
+            if 'sum' in archive_files:
+                try:
+                    with open(archive_files['sum'], 'r', encoding='utf-8') as f:
+                        sum_val = f.read().strip()
+                except Exception:
+                    pass
+            # 2026-07-07: snapshot 本轮双方的明文 + value（仅供审计）
+            uploads_snapshot = {}
+            for u in group.get('uploads', []):
+                uploads_snapshot[u['username']] = {
+                    'items': u.get('items', []),
+                    'values': u.get('values'),
+                }
+            round_record = {
+                'round': round_num,
+                'completed_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+                'completed_by': completed_by,
+                'uploads': uploads_snapshot,
+                'archive_dir': archive_dir,
+                'archive_files': archive_files,
+                'result': {
+                    'type': 'psi_sum',
+                    'cardinality': cardinality,
+                    'sum': sum_val,
+                },
+                'computation_seconds': (group.get('sum_result') or {}).get('duration_seconds'),
+                'computation_human': (group.get('sum_result') or {}).get('duration_human'),
+            }
+            group['rounds'].append(round_record)
+            # 清空当前 uploads + sum_result, 准备下一轮
+            group['uploads'] = []
+            group['sum_result'] = None
+            # 删顶层 stale 文件
+            for stale_fname in ('receiver.txt', 'sender.txt',
+                                'original_receiver.txt', 'original_sender.txt',
+                                'value_receiver.txt', 'value_sender.txt',
+                                'cardinality.txt', 'sum.txt',
+                                'sender_value.txt'):
+                stale_path = os.path.join(kunlun_dir, stale_fname)
+                if os.path.exists(stale_path):
+                    os.remove(stale_path)
+            PSISumGroupManager.save_groups(data)
+            return True, round_record
+        return False, "小组不存在"
+
+    @staticmethod
+    def get_history(group_id, username):
+        """返回该小组的所有 round 记录 (user 视角: 只暴露自己那份)"""
+        group = PSISumGroupManager.get_group(group_id)
+        if not group:
+            return None
+        history = []
+        for r in group.get('rounds', []):
+            my_upload = r['uploads'].get(username, {})
+            history.append({
+                'round': r['round'],
+                'completed_at': r['completed_at'],
+                'completed_by': r['completed_by'],
+                'my_upload_count': len(my_upload.get('items', [])),
+                'my_value_count': len(my_upload.get('values') or []),
+                'result': r['result'],
+                'computation_seconds': r.get('computation_seconds'),
+                'computation_human': r.get('computation_human'),
+            })
+        return history
+
+    @staticmethod
+    def get_round_data(group_id, round_num, file_type, username):
+        """返回归档文件路径。file_type:
+            my_plaintext | my_value | my_original | result_cardinality | result_sum
+        """
+        group = PSISumGroupManager.get_group(group_id)
+        if not group:
+            return None, "小组不存在"
+        rounds = group.get('rounds', [])
+        if round_num < 1 or round_num > len(rounds):
+            return None, "轮次不存在"
+        r = rounds[round_num - 1]
+        archive_files = r.get('archive_files', {})
+        # 权限: 必须是成员
+        if username not in group['members']:
+            return None, "你不是该小组成员"
+        # creator = receiver (Kunlun 协议角色)
+        role = 'receiver' if username == group['creator'] else 'sender'
+        if file_type == 'my_plaintext':
+            fpath = archive_files.get(f'original_{role}') or archive_files.get(role)
+        elif file_type == 'my_value':
+            fpath = archive_files.get(f'value_{role}')
+        elif file_type == 'my_ciphertext':
+            # PSI-Sum binary 不产生 ciphertext 文件
+            return None, "PSI-Sum 不存 ciphertext (协议不生成 OPRF 密文)"
+        elif file_type == 'result_cardinality':
+            fpath = archive_files.get('cardinality')
+        elif file_type == 'result_sum':
+            fpath = archive_files.get('sum')
+        else:
+            return None, "未知文件类型"
+        if not fpath or not os.path.exists(fpath):
+            return None, "文件不存在"
+        return fpath, None
+
 
 # ==================== SS-PSI 真实小组管理 (4 方, 2026-07-05) ====================
 
@@ -5033,6 +5176,7 @@ def api_get_psi_sum_group(group_id):
                 'members': group['members'],
                 'created_at': group['created_at'],
                 'standardize_mode': group.get('standardize_mode', 'auto'),
+                'history_count': len(group.get('rounds', [])),  # 2026-07-07: 多轮历史计数
             },
             'my_upload': my_upload,
             'other_upload': other_upload,
@@ -5265,6 +5409,76 @@ def api_delete_psi_sum_upload(group_id):
         return jsonify({'error': '你尚未上传'}), 400
     except Exception as e:
         return jsonify({'error': f'撤回上传失败:{str(e)}'}), 500
+
+
+# ==================== 2026-07-07: PSI-Sum 多轮历史 ====================
+
+@app.route('/api/psi-sum-group/<group_id>/finalize-round', methods=['POST'])
+@jwt_required
+def api_finalize_psi_sum_round(group_id):
+    """归档当前轮次, 让双方重新上传开始下一轮。
+    只允许 receiver (组长) 触发。必须双方都上传过且运算完成。
+    """
+    try:
+        group_id = group_id.upper()
+        group = PSISumGroupManager.get_group(group_id)
+        if not group:
+            return jsonify({'error': 'PSI-Sum 小组不存在'}), 404
+        username = request.current_user['username']
+        if username != group['creator']:
+            return jsonify({'error': '只有 receiver (组长) 可以归档轮次'}), 403
+        if group.get('sum_result') is None:
+            return jsonify({'error': '本轮未运算完成, 不能归档'}), 400
+        ok, result = PSISumGroupManager.finalize_round(group_id, username)
+        if ok:
+            return jsonify({
+                'success': True,
+                'round': result['round'],
+                'message': f'第 {result["round"]} 轮已归档'
+            })
+        return jsonify({'error': result}), 400
+    except Exception as e:
+        return jsonify({'error': f'归档轮次失败:{str(e)}'}), 500
+
+
+@app.route('/api/psi-sum-group/<group_id>/history', methods=['GET'])
+@jwt_required
+def api_get_psi_sum_group_history(group_id):
+    try:
+        group_id = group_id.upper()
+        group = PSISumGroupManager.get_group(group_id)
+        if not group:
+            return jsonify({'error': 'PSI-Sum 小组不存在'}), 404
+        username = request.current_user['username']
+        if username not in group['members']:
+            return jsonify({'error': '你不是该小组成员'}), 403
+        history = PSISumGroupManager.get_history(group_id, username)
+        if history is None:
+            return jsonify({'error': '小组不存在'}), 404
+        return jsonify({'rounds': history, 'success': True})
+    except Exception as e:
+        return jsonify({'error': f'获取历史失败:{str(e)}'}), 500
+
+
+@app.route('/api/psi-sum-group/<group_id>/round/<int:round_num>/download', methods=['GET'])
+@jwt_required
+def api_download_psi_sum_round_file(group_id, round_num):
+    """下载某 round 的归档文件。
+    type: my_plaintext | my_value | result_cardinality | result_sum
+    """
+    try:
+        group_id = group_id.upper()
+        file_type = request.args.get('type', '')
+        username = request.current_user['username']
+        fpath, err = PSISumGroupManager.get_round_data(group_id, round_num, file_type, username)
+        if err:
+            return jsonify({'error': err}), 400 if '存在' in err else 403
+        # PSI-Sum 文件可能是 cardinality(纯整数) / sum(整数或 BigInt 字符串)
+        # 用二进制返回,前端不需解析
+        from flask import send_file
+        return send_file(fpath, as_attachment=True, download_name=os.path.basename(fpath))
+    except Exception as e:
+        return jsonify({'error': f'下载文件失败:{str(e)}'}), 500
 
 
 # SS-PSI APIs(结构同 PSI-Sum,4 方)
