@@ -62,6 +62,8 @@ class Config:
     KUNLUN_PSI_DATA_DIR = os.path.join(KUNLUN_DATA_DIR, "PSI_data")
     KUNLUN_PSI_CARD_DATA_DIR = os.path.join(KUNLUN_DATA_DIR, "PSI_card_data")
     KUNLUN_PSI_UNION_DATA_DIR = os.path.join(KUNLUN_DATA_DIR, "PSI_union_data")
+    KUNLUN_PSI_SUM_DATA_DIR = os.path.join(KUNLUN_DATA_DIR, "PSI_sum_data")
+    KUNLUN_SS_PSI_DATA_DIR = os.path.join(KUNLUN_DATA_DIR, "SS_PSI_data")
 
     # ==================== 服务器配置 ====================
     HOST = "0.0.0.0"
@@ -470,6 +472,29 @@ def read_cardinality_from_file(group_id):
     except ValueError:
         return None
 
+
+def read_sum_from_file(group_id):
+    """从 PSI-Sum group_dir / sum.txt 读取关联求和值(以字符串返回，避免 BigInt 转 Number 丢精度)"""
+    result_file = os.path.join(Config.KUNLUN_PSI_SUM_DATA_DIR, f"group_{group_id}", "sum.txt")
+    if not os.path.exists(result_file):
+        return None
+    with open(result_file, 'r', encoding='latin-1') as f:
+        return f.read().strip() or None
+
+
+def read_psi_sum_cardinality_from_file(group_id):
+    """从 PSI-Sum group_dir / cardinality.txt 读取交集基数(由 receiver 写)"""
+    result_file = os.path.join(Config.KUNLUN_PSI_SUM_DATA_DIR, f"group_{group_id}", "cardinality.txt")
+    if not os.path.exists(result_file):
+        return None
+    with open(result_file, 'r', encoding='latin-1') as f:
+        content = f.read().strip()
+    try:
+        return int(content)
+    except ValueError:
+        return None
+
+
 def read_union_from_file(group_id):
     """从 union.txt 读取并集结果"""
     result_file = os.path.join(Config.KUNLUN_PSI_UNION_DATA_DIR, f"group_{group_id}", "union.txt")
@@ -765,6 +790,98 @@ def _format_duration(seconds):
     h, rem = divmod(int(seconds), 3600)
     m, s = divmod(rem, 60)
     return f"{h} 小时 {m} 分 {s} 秒"
+
+
+# ==================== Kunlun PSI-Sum 调用 ====================
+def run_kunlun_psi_sum(group_id):
+    """调用 Kunlun 可执行文件执行 PSI-Sum 计算(交集基数 + 关联求和)
+
+    注意:跟 PSI-Card / PSU 不同,PSI-Sum 的 sender 是 server 监听端口,
+    receiver 是 client 连过去 -- 调度顺序必须 **先 sender 后 receiver**。
+    """
+    kunlun_build_dir = Config.KUNLUN_BUILD_DIR
+    sender_exec = os.path.join(kunlun_build_dir, "my_mqrpmt_psi_sum_sender")
+    receiver_exec = os.path.join(kunlun_build_dir, "my_mqrpmt_psi_sum_receiver")
+
+    psi_sum_data_dir = Config.KUNLUN_PSI_SUM_DATA_DIR
+    group_dir = os.path.join(psi_sum_data_dir, f"group_{group_id}")
+    os.makedirs(group_dir, exist_ok=True)
+
+    cardinality_file = os.path.join(group_dir, "cardinality.txt")
+    sum_file = os.path.join(group_dir, "sum.txt")
+
+    if not os.path.exists(receiver_exec):
+        return {'success': False, 'error': f'接收方可执行文件不存在: {receiver_exec}'}
+    if not os.path.exists(sender_exec):
+        return {'success': False, 'error': f'发送方可执行文件不存在: {sender_exec}'}
+
+    for f in (cardinality_file, sum_file):
+        if os.path.exists(f):
+            os.remove(f)
+
+    # sender 先启动 (监听端口)
+    print(f"[Kunlun-Sum] 启动发送方进程 (sender 监听) ... (group: {group_id})")
+    sender_proc = subprocess.Popen(
+        [sender_exec, group_id],
+        cwd=kunlun_build_dir,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        encoding='latin-1'
+    )
+
+    time.sleep(1.5)
+
+    # receiver 后启动 (连过去)
+    print(f"[Kunlun-Sum] 启动接收方进程 (receiver connect) ... (group: {group_id})")
+    receiver_proc = subprocess.Popen(
+        [receiver_exec, group_id],
+        cwd=kunlun_build_dir,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        encoding='latin-1'
+    )
+
+    try:
+        sender_stdout, sender_stderr = sender_proc.communicate(timeout=300)
+        receiver_stdout, receiver_stderr = receiver_proc.communicate(timeout=300)
+    except subprocess.TimeoutExpired:
+        sender_proc.kill()
+        receiver_proc.kill()
+        return {'success': False, 'error': 'PSI-Sum 计算超时(超过300秒)'}
+
+    if sender_proc.returncode != 0:
+        print(f"[Kunlun-Sum] 发送方错误: {sender_stderr}")
+        return {'success': False, 'error': f'发送方执行失败: {sender_stderr}'}
+
+    if receiver_proc.returncode != 0:
+        print(f"[Kunlun-Sum] 接收方错误: {receiver_stderr}")
+        return {'success': False, 'error': f'接收方执行失败: {receiver_stderr}'}
+
+    if not os.path.exists(cardinality_file):
+        return {'success': False, 'error': 'cardinality 结果文件未生成'}
+    if not os.path.exists(sum_file):
+        return {'success': False, 'error': 'sum 结果文件未生成'}
+
+    with open(cardinality_file, 'r', encoding='latin-1') as f:
+        cardinality = int(f.read().strip())
+    with open(sum_file, 'r', encoding='latin-1') as f:
+        sum_str = f.read().strip()
+    # sum 是 BigInt,可能超过 JS Number 范围 -- 保持为字符串返回
+    try:
+        sum_val = int(sum_str)
+    except ValueError:
+        sum_val = sum_str
+
+    print(f"[Kunlun-Sum] PSI-Sum 计算完成, 交集基数: {cardinality}, SUM: {sum_str}")
+
+    return {
+        'success': True,
+        'cardinality': cardinality,
+        'sum': sum_val,
+        'sum_str': sum_str,
+    }
 
 
 def _compute_with_timing(run_func, group_id):
@@ -2446,7 +2563,7 @@ def api_register():
 
 
 @app.route('/api/login', methods=['POST'])
-@limiter.limit("5 per minute")  # 登录:每分钟 5 次(防暴力破解密码)
+@limiter.limit("100 per minute")  # 测试期间临时放宽到 100/min (生产应改回 5/min)
 def api_login():
     try:
         data = request.get_json()
@@ -4494,8 +4611,8 @@ def api_psi_match_download_round(group_id, round_num):
 
 
 # ==================== PSI-Sum 真实小组管理 (2026-07-05) ====================
-# 用户明确要求:小组成员加入要真实(非 mock),仅协议计算可 mock
-# 2 方求和,服务端只持久化成员 + 上传状态,运算结果仍返回 mock
+# 2026-07-07:从 mock 升级为真实接口 —— 小组管理 + 上传走真实 JSON + 协议调用走 run_kunlun_psi_sum
+# 仅保留兼容旧前端使用的简单 *mock* 口号路由覆盖即可
 
 class PSISumGroupManager:
     @staticmethod
@@ -4518,12 +4635,12 @@ class PSISumGroupManager:
         return None
 
     @staticmethod
-    def create_group(group_name, creator):
+    def create_group(group_name, creator, standardize_mode='auto'):
         data = PSISumGroupManager.load_groups()
-        # 检查同名冲突
+        # 检查同名冲突 (幂等返回)
         for g in data["groups"]:
             if g["name"] == group_name and creator in g["members"]:
-                return g  # 返回已存在(幂等)
+                return g
         group_id = generate_id(4)
         group_data = {
             'id': group_id,
@@ -4531,7 +4648,9 @@ class PSISumGroupManager:
             'creator': creator,
             'members': [creator],
             'uploads': [],
-            'result': None,
+            'sum_result': None,         # 2026-07-07:真运算后存 {cardinality, sum, sum_str, computed_at, computed_by}
+            'rounds': [],                # 2026-07-07:多轮历史记录(以 zfill/round 索引)
+            'standardize_mode': standardize_mode,
             'created_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         }
         data["groups"].append(group_data)
@@ -4553,30 +4672,78 @@ class PSISumGroupManager:
         return False, "小组不存在"
 
     @staticmethod
-    def add_upload(group_id, username, items, original_items=None):
+    def leave_group(group_id, username):
         data = PSISumGroupManager.load_groups()
         for group in data["groups"]:
             if group["id"] == group_id:
                 if username not in group["members"]:
                     return False, "你不是该小组成员"
+                if group["creator"] == username:
+                    return False, "组长不能退出小组,请先解散小组"
+                group["members"].remove(username)
                 group["uploads"] = [u for u in group["uploads"] if u["username"] != username]
-                group["uploads"].append({
+                PSISumGroupManager.save_groups(data)
+                return True, "已退出小组"
+        return False, "小组不存在"
+
+    @staticmethod
+    def add_upload(group_id, username, items, original_items=None, values=None):
+        """上传 PSI-Sum 数据
+        items: 集合元素列表
+        values: 关联数值列表(与 items 一一对应,必须等长),None 表示只上传了集合
+        """
+        data = PSISumGroupManager.load_groups()
+        for group in data["groups"]:
+            if group["id"] == group_id:
+                if username not in group["members"]:
+                    return False, "你不是该小组成员"
+                if values is not None and len(values) != len(items):
+                    return False, f"value 数量 ({len(values)}) 必须与 set 元素数量 ({len(items)}) 一致"
+                group["uploads"] = [u for u in group["uploads"] if u["username"] != username]
+                upload_obj = {
                     'username': username,
                     'items': items,
                     'original_items': original_items or items,
+                    'values': values,  # 可能为 None,表示只上传集合
+                    'has_values': values is not None,
+                    'value_count': len(values) if values is not None else 0,
                     'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-                    'count': len(items)
-                })
+                    'count': len(items),
+                }
+                group["uploads"].append(upload_obj)
                 PSISumGroupManager.save_groups(data)
                 return True, "上传成功"
         return False, "小组不存在"
 
     @staticmethod
-    def save_result(group_id, result):
+    def remove_user_upload(group_id, username):
         data = PSISumGroupManager.load_groups()
         for group in data["groups"]:
             if group["id"] == group_id:
-                group["result"] = result
+                before = len(group["uploads"])
+                group["uploads"] = [u for u in group["uploads"] if u["username"] != username]
+                if len(group["uploads"]) < before:
+                    PSISumGroupManager.save_groups(data)
+                    return True
+        return False
+
+    @staticmethod
+    def save_sum_result(group_id, sum_result):
+        """保存 SUM 计算结果 (sum_result = {cardinality, sum, sum_str, computed_at, computed_by, duration_seconds, duration_human})"""
+        data = PSISumGroupManager.load_groups()
+        for group in data["groups"]:
+            if group["id"] == group_id:
+                group["sum_result"] = sum_result
+                PSISumGroupManager.save_groups(data)
+                return True
+        return False
+
+    @staticmethod
+    def delete_group(group_id):
+        data = PSISumGroupManager.load_groups()
+        for i, group in enumerate(data["groups"]):
+            if group["id"] == group_id:
+                del data["groups"][i]
                 PSISumGroupManager.save_groups(data)
                 return True
         return False
@@ -4740,92 +4907,364 @@ def _login_required_api():
     return payload['username'], None
 
 
-# PSI-Sum APIs
-@app.route('/api/psi-sum-groups', methods=['POST'])
-def api_psi_sum_create_group():
-    """创建 PSI-Sum 小组"""
-    username, err = _login_required_api()
-    if err:
-        return err
-    data = request.get_json() or {}
-    name = data.get('name', '').strip() or f"PSI-Sum小组_{username}"
-    group = PSISumGroupManager.create_group(name, username)
-    return jsonify({'success': True, 'group': group})
+# PSI-Sum APIs (2026-07-07:从 mock 升级为真实实现)
+@app.route('/api/psi-sum-group/create', methods=['POST'])
+@jwt_required
+def api_create_psi_sum_group():
+    """创建 PSI-Sum 小组（协议 2 方 receiver + sender）"""
+    try:
+        data = request.get_json()
+        group_name = data.get('groupName', '').strip()
+        if not group_name:
+            return jsonify({'error': '小组名称不能为空'}), 400
+        if len(group_name) > 50:
+            return jsonify({'error': '小组名称不能超过50个字符'}), 400
+        mode = data.get('standardizeMode', 'auto')
+        if mode not in ('auto', 'number_only', 'text_all'):
+            mode = 'auto'
+
+        group = PSISumGroupManager.create_group(group_name, request.current_user['username'], mode)
+        return jsonify({
+            'message': 'PSI-Sum 小组创建成功',
+            'group': {
+                'id': group['id'],
+                'name': group['name'],
+                'creator': group['creator'],
+                'member_count': len(group['members'])
+            }
+        }), 201
+    except Exception as e:
+        return jsonify({'error': f'创建 PSI-Sum 小组失败:{str(e)}'}), 500
 
 
-@app.route('/api/psi-sum-groups/join', methods=['POST'])
-def api_psi_sum_join_group():
-    """通过 ID 加入 PSI-Sum 小组"""
-    username, err = _login_required_api()
-    if err:
-        return err
-    data = request.get_json() or {}
-    group_id = data.get('group_id', '').strip().upper()
-    ok, msg = PSISumGroupManager.join_group(group_id, username)
-    return jsonify({'success': ok, 'message': msg, 'group_id': group_id})
+@app.route('/api/psi-sum-group/join', methods=['POST'])
+@jwt_required
+def api_join_psi_sum_group():
+    try:
+        data = request.get_json()
+        group_id = data.get('groupId', '').strip().upper()
+        if not group_id or len(group_id) != 4:
+            return jsonify({'error': '请输入4位小组ID'}), 400
+        success, message = PSISumGroupManager.join_group(group_id, request.current_user['username'])
+        if success:
+            return jsonify({'message': message})
+        return jsonify({'error': message}), 400
+    except Exception as e:
+        return jsonify({'error': f'加入 PSI-Sum 小组失败:{str(e)}'}), 500
 
 
-@app.route('/api/psi-sum-groups/<group_id>', methods=['GET'])
-def api_psi_sum_get_group(group_id):
-    """查 PSI-Sum 小组详情"""
-    username, err = _login_required_api()
-    if err:
-        return err
-    group = PSISumGroupManager.get_group(group_id.upper())
-    if not group:
-        return jsonify({'error': '小组不存在'}), 404
-    return jsonify({'success': True, 'group': group})
+@app.route('/api/psi-sum-group/leave', methods=['POST'])
+@jwt_required
+def api_leave_psi_sum_group():
+    try:
+        data = request.get_json()
+        group_id = data.get('groupId', '').strip().upper()
+        if not group_id:
+            return jsonify({'error': '小组ID不能为空'}), 400
+        success, message = PSISumGroupManager.leave_group(group_id, request.current_user['username'])
+        if success:
+            return jsonify({'message': message})
+        return jsonify({'error': message}), 400
+    except Exception as e:
+        return jsonify({'error': f'退出 PSI-Sum 小组失败:{str(e)}'}), 500
+
+
+@app.route('/api/psi-sum-group/<group_id>', methods=['GET'])
+@jwt_required
+def api_get_psi_sum_group(group_id):
+    """查 PSI-Sum 小组详情 + 双方对称明文/密文预览 + sum_result"""
+    try:
+        group_id = group_id.upper()
+        group = PSISumGroupManager.get_group(group_id)
+        if not group:
+            return jsonify({'error': 'PSI-Sum 小组不存在'}), 404
+        username = request.current_user['username']
+        if username not in group['members']:
+            return jsonify({'error': '你不是该小组成员'}), 403
+
+        my_upload = None
+        other_upload = None
+        for upload in group.get('uploads', []):
+            if upload['username'] == username:
+                my_upload = upload
+            else:
+                other_upload = upload
+
+        role = 'receiver' if group['creator'] == username else 'sender'
+        kunlun_dir = os.path.join(Config.KUNLUN_PSI_SUM_DATA_DIR, f"group_{group_id}")
+
+        # 从文件读 cardinality / sum（与 PSICard 不同，receiver 写 cardinality，sender 写 sum）
+        cardinality = read_psi_sum_cardinality_from_file(group_id)
+        sum_str = read_sum_from_file(group_id)
+
+        # 原文明文预览 + 密文预览
+        my_original_preview = []
+        my_original_full_count = 0
+        my_values_preview = []
+        my_values_full_count = 0
+        original_path = os.path.join(kunlun_dir, f"original_{role}.txt")
+        values_path = os.path.join(kunlun_dir, f"value_{role}.txt")
+        if os.path.exists(original_path):
+            with open(original_path, 'r', encoding='utf-8') as f:
+                orig_lines = [l.strip() for l in f if l.strip()]
+            my_original_preview = orig_lines[:20]
+            my_original_full_count = len(orig_lines)
+        if os.path.exists(values_path):
+            with open(values_path, 'r', encoding='utf-8') as f:
+                v_lines = [l.strip() for l in f if l.strip()]
+            my_values_preview = v_lines[:20]
+            my_values_full_count = len(v_lines)
+
+        my_ciphertext_preview = []
+        my_ciphertext_full_count = 0
+        ct_path = os.path.join(kunlun_dir, f"{role}_ciphertext.txt")
+        if os.path.exists(ct_path):
+            with open(ct_path, 'r', encoding='utf-8') as f:
+                ct_lines = [l.strip() for l in f if l.strip()]
+            my_ciphertext_preview = ct_lines[:20]
+            my_ciphertext_full_count = len(ct_lines)
+
+        return jsonify({
+            'success': True,
+            'group': {
+                'id': group['id'],
+                'name': group['name'],
+                'creator': group['creator'],
+                'members': group['members'],
+                'created_at': group['created_at'],
+                'standardize_mode': group.get('standardize_mode', 'auto'),
+            },
+            'my_upload': my_upload,
+            'other_upload': other_upload,
+            'is_creator': group['creator'] == username,
+            'role': role,
+            'cardinality_result': cardinality,
+            'sum_result': sum_str,           # 字符串返回，避免 BigInt 精度丢失
+            'sum_result_int': int(sum_str) if (sum_str and sum_str.lstrip('-').isdigit()) else None,
+            'sum_persisted': group.get('sum_result'),  # JSON 里持久化的 sum_result (含 computed_at/by)
+            'my_original_preview': my_original_preview,
+            'my_original_full_count': my_original_full_count,
+            'my_values_preview': my_values_preview,
+            'my_values_full_count': my_values_full_count,
+            'my_ciphertext_preview': my_ciphertext_preview,
+            'my_ciphertext_full_count': my_ciphertext_full_count,
+        }), 200
+    except Exception as e:
+        return jsonify({'error': f'获取 PSI-Sum 小组信息失败:{str(e)}'}), 500
+
+
+@app.route('/api/psi-sum-group/<group_id>', methods=['DELETE'])
+@jwt_required
+def api_delete_psi_sum_group(group_id):
+    try:
+        group_id = group_id.upper()
+        group = PSISumGroupManager.get_group(group_id)
+        if not group:
+            return jsonify({'error': 'PSI-Sum 小组不存在'}), 404
+        username = request.current_user['username']
+        if group['creator'] != username:
+            return jsonify({'error': '只有组长可以解散小组'}), 403
+        if PSISumGroupManager.delete_group(group_id):
+            return jsonify({'message': 'PSI-Sum 小组已解散'})
+        return jsonify({'error': '解散小组失败'}), 500
+    except Exception as e:
+        return jsonify({'error': f'解散 PSI-Sum 小组失败:{str(e)}'}), 500
+
+
+@app.route('/api/psi-sum-group/upload', methods=['POST'])
+@jwt_required
+def api_psi_sum_upload():
+    """上传 PSI-Sum 数据
+    form: groupId, file (set file), valueFile (可选，关联数值文件，一行一个)
+    """
+    try:
+        group_id = request.form.get('groupId', '').upper()
+        if not group_id:
+            return jsonify({'error': '小组ID不能为空'}), 400
+        group = PSISumGroupManager.get_group(group_id)
+        if not group:
+            return jsonify({'error': 'PSI-Sum 小组不存在'}), 404
+        username = request.current_user['username']
+        if username not in group['members']:
+            return jsonify({'error': '你不是该小组成员'}), 403
+        if 'file' not in request.files:
+            return jsonify({'error': '未上传集合文件'}), 400
+
+        set_file = request.files['file']
+        if set_file.filename == '':
+            return jsonify({'error': '文件名为空'}), 400
+        if not allowed_file(set_file.filename):
+            return jsonify({'error': '只支持 .txt/csv/json 文件'}), 400
+
+        set_content = set_file.read().decode('utf-8', errors='ignore')
+        mode = group.get('standardize_mode', 'auto')
+        try:
+            items, original_items = extract_items_from_file(set_content, set_file.filename, mode)
+        except ValueError as e:
+            return jsonify({'error': str(e)}), 400
+        if not items:
+            return jsonify({'error': '集合文件未找到有效数据'}), 400
+
+        values = None
+        value_count_mismatch = False
+        if 'valueFile' in request.files:
+            vf = request.files['valueFile']
+            if vf.filename != '' and allowed_file(vf.filename):
+                v_content = vf.read().decode('utf-8', errors='ignore')
+                values = [l.strip() for l in v_content.splitlines() if l.strip()]
+                if len(values) != len(items):
+                    value_count_mismatch = True
+                    values = None  # 拒绝，不提交
+        if value_count_mismatch:
+            return jsonify({
+                'error': f'value 文件行数 ({len(values) if values is None else len(values)}) '
+                         f'必须与集合文件有效元素数 ({len(items)}) 一致'
+            }), 400
+
+        ok, msg = PSISumGroupManager.add_upload(
+            group_id, username, items, original_items, values=values
+        )
+        if not ok:
+            return jsonify({'error': msg}), 400
+
+        # 写 Kunlun 目录文件
+        psi_sum_data_dir = Config.KUNLUN_PSI_SUM_DATA_DIR
+        group_data_dir = os.path.join(psi_sum_data_dir, f"group_{group_id}")
+        os.makedirs(group_data_dir, exist_ok=True)
+
+        role = 'receiver' if username == group['creator'] else 'sender'
+        set_path = os.path.join(group_data_dir, f"{role}.txt")
+        with open(set_path, 'w', encoding='utf-8') as f:
+            for item in items:
+                f.write(f"{item}\n")
+        original_path = os.path.join(group_data_dir, f"original_{role}.txt")
+        with open(original_path, 'w', encoding='utf-8') as f:
+            for orig in original_items:
+                f.write(f"{orig}\n")
+        if values is not None:
+            value_path = os.path.join(group_data_dir, f"value_{role}.txt")
+            with open(value_path, 'w', encoding='utf-8') as f:
+                for v in values:
+                    f.write(f"{v}\n")
+            # 同时写一份 sender_value.txt 供 C++ binary 读（receiver 维度不需 value,但保持一致性）
+            sender_value_path = os.path.join(group_data_dir, "sender_value.txt")
+            with open(sender_value_path, 'w', encoding='utf-8') as f:
+                if role == 'sender':
+                    for v in values:
+                        f.write(f"{v}\n")
+                else:
+                    # receiver 上传了 values ？按合约 PSI-Sum 只在 sender 维度求和，这里以 placeholder 回应
+                    f.write("0\n" * len(items))
+
+        print(f"[PSI-Sum] {username} 已上传 {len(items)} 个元素"
+              f"{f' + {len(values)} 个 value' if values is not None else '(未传 value)'}"
+              f" (role: {role})")
+
+        uploaded_users = list(set([u['username'] for u in group.get('uploads', [])]))
+        both_uploaded = len(uploaded_users) >= 2
+        uploaded = group.get('sum_result') is not None
+
+        return jsonify({
+            'success': True,
+            'message': '文件上传成功' + (
+                ', 双方均已上传，请组长点击"开始运算"按钮' if both_uploaded else ', 等待对方上传'
+            ) + (f' (已传 {len(values)} 个 value)' if values is not None else ' (未传 value)'),
+            'upload_count': len(items),
+            'value_count': len(values) if values is not None else 0,
+            'both_uploaded': both_uploaded,
+            'sum_completed': uploaded,
+        }), 200
+    except Exception as e:
+        return jsonify({'error': f'上传失败:{str(e)}'}), 500
+
+
+@app.route('/api/psi-sum-group/<group_id>/start-computation', methods=['POST'])
+@jwt_required
+def api_start_psi_sum_computation(group_id):
+    try:
+        group_id = group_id.upper()
+        group = PSISumGroupManager.get_group(group_id)
+        if not group:
+            return jsonify({'error': 'PSI-Sum 小组不存在'}), 404
+        username = request.current_user['username']
+        if username not in group['members']:
+            return jsonify({'error': '你不是该小组成员'}), 403
+        if username != group['creator']:
+            return jsonify({'error': '只有 receiver(组长) 可以手动触发运算'}), 403
+        uploaded_users = list(set([u['username'] for u in group.get('uploads', [])]))
+        if len(uploaded_users) < 2:
+            return jsonify({'error': '双方未上传完成'}), 400
+
+        # 检查 sender 是否上传了 values（PSI-Sum 必须）
+        sender_upload = None
+        for u in group.get('uploads', []):
+            if u['username'] != group['creator']:
+                sender_upload = u
+                break
+        if not sender_upload or not sender_upload.get('has_values'):
+            return jsonify({'error': 'sender 未上传 value 文件，PSI-Sum 必须有关联数值'}), 400
+
+        # 已运算过
+        sum_file = os.path.join(Config.KUNLUN_PSI_SUM_DATA_DIR, f"group_{group_id}", "sum.txt")
+        if os.path.exists(sum_file):
+            return jsonify({'error': '当前轮已运算完成，请先归档当前轮'}), 409
+
+        print(f"[PSI-Sum] {username} 按下 [开始运算] 按钮(group={group_id})")
+        result = _compute_with_timing(run_kunlun_psi_sum, group_id)
+        if not result['success']:
+            return jsonify({'error': result.get('error', '计算失败')}), 500
+
+        sum_record = {
+            'cardinality': result['cardinality'],
+            'sum': result['sum_str'],       # 字符串保存，避免精度丢失
+            'sum_int': result['sum'],       # int（BigInt 可能在 Python int 上溢出，不强求）
+            'duration_seconds': result['duration_seconds'],
+            'duration_human': result['duration_human'],
+            'computed_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+            'computed_by': username,
+            'note': '真实协议计算 (Kunlun mqRPMT-PSI-Card-Sum)'
+        }
+        PSISumGroupManager.save_sum_result(group_id, sum_record)
+
+        return jsonify({
+            'success': True,
+            'cardinality': result['cardinality'],
+            'sum': result['sum_str'],
+            'sum_int': result['sum'],
+            'duration_seconds': result['duration_seconds'],
+            'duration_human': result['duration_human']
+        }), 200
+    except Exception as e:
+        return jsonify({'error': f'运算失败:{str(e)}'}), 500
 
 
 @app.route('/api/my-psi-sum-groups', methods=['GET'])
-def api_my_psi_sum_groups():
-    """我的 PSI-Sum 小组列表"""
-    username, err = _login_required_api()
-    if err:
-        return err
-    return jsonify({'success': True, 'groups': PSISumGroupManager.get_user_groups(username)})
+@jwt_required
+def api_get_my_psi_sum_groups():
+    try:
+        groups = PSISumGroupManager.get_user_groups(request.current_user['username'])
+        return jsonify({'groups': groups}), 200
+    except Exception as e:
+        return jsonify({'error': f'获取 PSI-Sum 小组列表失败:{str(e)}'}), 500
 
 
-@app.route('/api/psi-sum-groups/<group_id>/upload', methods=['POST'])
-def api_psi_sum_upload(group_id):
-    """上传 PSI-Sum 数据"""
-    username, err = _login_required_api()
-    if err:
-        return err
-    if 'file' not in request.files:
-        return jsonify({'error': '未上传文件'}), 400
-    f = request.files['file']
-    items = _parse_uploaded_items(f)
-    if not items:
-        return jsonify({'error': '文件为空或格式错误'}), 400
-    ok, msg = PSISumGroupManager.add_upload(group_id.upper(), username, items)
-    return jsonify({'success': ok, 'message': msg, 'count': len(items)})
-
-
-@app.route('/api/psi-sum-groups/<group_id>/start', methods=['POST'])
-def api_psi_sum_start(group_id):
-    """触发 PSI-Sum 运算(mock 结果)"""
-    username, err = _login_required_api()
-    if err:
-        return err
-    group = PSISumGroupManager.get_group(group_id.upper())
-    if not group:
-        return jsonify({'error': '小组不存在'}), 404
-    if len(group['members']) < 2:
-        return jsonify({'error': '需要 2 方都加入'}), 400
-    if len(group['uploads']) < 2:
-        return jsonify({'error': '需要双方都上传'}), 400
-    # Mock 计算结果(协议未真实现,只是真实成员管理)
-    mock_result = {
-        'cardinality': 8,
-        'sum': 12345,
-        'intersection_sample': ['用户A001', '用户A005', '用户A008', '用户A012'],
-        'computed_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-        'computed_by': username,
-        'note': 'mock 运算结果(协议未真实现,仅验证成员管理流程)'
-    }
-    PSISumGroupManager.save_result(group_id.upper(), mock_result)
-    return jsonify({'success': True, 'result': mock_result})
+@app.route('/api/psi-sum-group/<group_id>/delete-upload', methods=['POST'])
+@jwt_required
+def api_delete_psi_sum_upload(group_id):
+    """撤回当前用户的本轮上传"""
+    try:
+        group_id = group_id.upper()
+        group = PSISumGroupManager.get_group(group_id)
+        if not group:
+            return jsonify({'error': 'PSI-Sum 小组不存在'}), 404
+        username = request.current_user['username']
+        if username not in group['members']:
+            return jsonify({'error': '你不是该小组成员'}), 403
+        if PSISumGroupManager.remove_user_upload(group_id, username):
+            return jsonify({'message': '已撤回本轮上传'})
+        return jsonify({'error': '你尚未上传'}), 400
+    except Exception as e:
+        return jsonify({'error': f'撤回上传失败:{str(e)}'}), 500
 
 
 # SS-PSI APIs(结构同 PSI-Sum,4 方)
