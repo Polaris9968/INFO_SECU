@@ -2728,8 +2728,10 @@ window.PSI_SUM = (function() {
         const detail = await loadGroupDetail(groupId);
         if (!detail) { alert('加载小组失败'); await init(); return; }
         currentGroupDetail = detail;
-        // PSI_INT 风格:sidebar 一直显示,主区域 backBtn 显示
-        const backBtn = $('psiSumBackBtn'); if (backBtn) backBtn.style.display = 'block';
+        // 2026-07-08:跟 PSI_INT 一致 - sidebar 隐藏, main 占满整页
+        const sidebarEl = document.querySelector('.psi-sum-page .sidebar');
+        if (sidebarEl) sidebarEl.style.display = 'none';
+        const backBtn = $('psiSumBackBtn'); if (backBtn) backBtn.style.display = 'inline-block';
         const section = $('psiSumCurrentGroupSection'); if (section) section.style.display = 'block';
         document.querySelectorAll('#psiSumMyGroupList .psi-group-item').forEach(li => {
             li.classList.toggle('active', li.dataset.groupId === groupId);
@@ -2999,7 +3001,9 @@ window.PSI_SUM = (function() {
         switchTab('current');
         const tabHistory = $('psiSumTabHistory'); if (tabHistory) tabHistory.style.display = 'none';
         const histCount = $('psiSumHistoryCount'); if (histCount) histCount.innerText = '0';
-        // 收起主区域
+        // 2026-07-08:显示 sidebar,隐藏 main(跟 PSI_INT 一致)
+        const sidebarEl = document.querySelector('.psi-sum-page .sidebar');
+        if (sidebarEl) sidebarEl.style.display = 'block';
         const backBtn = $('psiSumBackBtn'); if (backBtn) backBtn.style.display = 'none';
         const section = $('psiSumCurrentGroupSection'); if (section) section.style.display = 'none';
         resetMainArea();
