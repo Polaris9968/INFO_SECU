@@ -1855,6 +1855,77 @@ body > .sidebar {
 @keyframes spin {
     to { transform: rotate(360deg); }
 }
+
+/* ============================================================
+   2026-07-07: PSI-Sum page (复用 PSI_INT 的 tab / round-item 样式)
+   ============================================================ */
+.psi-sum-page .tab-btn,
+.psi-sum-page .psi-sum-tabs .tab-btn {
+    padding: 8px 16px;
+    margin-right: 5px;
+    border: 1px solid #d1d5db;
+    border-bottom: none;
+    background: #f3f4f6;
+    cursor: pointer;
+    border-radius: 6px 6px 0 0;
+    font-size: 14px;
+    transition: all 0.2s;
+}
+.psi-sum-page .tab-btn:hover {
+    background: #e5e7eb;
+}
+.psi-sum-page .tab-btn.active {
+    background: #fff;
+    border-color: #3b82f6;
+    color: #1e40af;
+    font-weight: 600;
+}
+.psi-sum-page .round-item {
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 15px 20px;
+    border-left: 4px solid #3b82f6;
+    margin-bottom: 15px;
+}
+.psi-sum-page .round-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+.psi-sum-page .round-title {
+    font-weight: bold;
+    font-size: 15px;
+    color: #1f2937;
+}
+.psi-sum-page .round-meta {
+    font-size: 12px;
+    color: #6b7280;
+}
+.psi-sum-page .round-body {
+    margin-top: 8px;
+    font-size: 13px;
+    color: #4b5563;
+}
+.psi-sum-page .round-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+    flex-wrap: wrap;
+}
+.psi-sum-page .round-actions .btn {
+    margin: 0;
+    padding: 6px 12px;
+    font-size: 12px;
+}
+.psi-sum-page .hint-text {
+    color: #6b7280;
+    font-size: 12px;
+}
+.psi-sum-page .hidden {
+    display: none !important;
+}
 </style>
 </head>
 
@@ -2561,83 +2632,101 @@ body > .sidebar {
             <div id="psiSumView2" style="display:none;">
                 <button class="btn btn-secondary back-btn" onclick="PSI_SUM.backToList()">← 返回小组列表</button>
 
-                <div class="card group-info-card">
-                    <h2>🔒 <span id="psiSumCurrentGroupName"></span></h2>
-                    <div class="psi-group-code" id="psiSumCurrentGroupId">ABCD</div>
-                    <div class="group-info-item">
-                        <span class="group-info-label">组长</span>
-                        <span class="group-info-value" id="psiSumCreator">我</span>
-                    </div>
-                    <div class="group-info-item">
-                        <span class="group-info-label">成员数量</span>
-                        <span class="group-info-value" id="psiSumMemberCount">1 人</span>
-                    </div>
-                    <div class="group-info-item">
-                        <span class="group-info-label">创建时间</span>
-                        <span class="group-info-value" id="psiSumCreatedAt"></span>
-                    </div>
-                    <div class="group-info-item">
-                        <span class="group-info-label">标准化方式</span>
-                        <span class="group-info-value" id="psiSumStandardizeModeShown">自动</span>
-                    </div>
-                    <button class="btn btn-danger" style="margin-top:10px;" onclick="PSI_SUM.deleteGroup()">🗑 解散小组</button>
+                <!-- 2026-07-07:多轮历史 tab 切换器 -->
+                <div class="psi-sum-tabs" style="margin-bottom: 15px;">
+                    <button class="tab-btn active" id="psiSumTabCurrent" onclick="PSI_SUM.switchTab('current')">📋 当前操作</button>
+                    <button class="tab-btn" id="psiSumTabHistory" onclick="PSI_SUM.switchTab('history')" style="display:none;">📚 历史记录 (<span id="psiSumHistoryCount">0</span>)</button>
                 </div>
 
-                <div class="card">
-                    <h2>👥 成员状态</h2>
-                    <div id="psiSumMemberStatus"></div>
-                    <div class="progress-bar">
-                        <div class="progress-fill" id="psiSumProgressFill" style="width: 0%;"></div>
+                <!-- 当前操作 tab -->
+                <div id="psiSumCurrentTab">
+                    <div class="card group-info-card">
+                        <h2>🔒 <span id="psiSumCurrentGroupName"></span></h2>
+                        <div class="psi-group-code" id="psiSumCurrentGroupId">ABCD</div>
+                        <div class="group-info-item">
+                            <span class="group-info-label">组长</span>
+                            <span class="group-info-value" id="psiSumCreator">我</span>
+                        </div>
+                        <div class="group-info-item">
+                            <span class="group-info-label">成员数量</span>
+                            <span class="group-info-value" id="psiSumMemberCount">1 人</span>
+                        </div>
+                        <div class="group-info-item">
+                            <span class="group-info-label">创建时间</span>
+                            <span class="group-info-value" id="psiSumCreatedAt"></span>
+                        </div>
+                        <div class="group-info-item">
+                            <span class="group-info-label">标准化方式</span>
+                            <span class="group-info-value" id="psiSumStandardizeModeShown">自动</span>
+                        </div>
+                        <button class="btn btn-danger" style="margin-top:10px;" onclick="PSI_SUM.deleteGroup()">🗑 解散小组</button>
                     </div>
-                    <div class="status-text" id="psiSumProgressText">等待对方加入...</div>
+
+                    <div class="card">
+                        <h2>👥 成员状态</h2>
+                        <div id="psiSumMemberStatus"></div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="psiSumProgressFill" style="width: 0%;"></div>
+                        </div>
+                        <div class="status-text" id="psiSumProgressText">等待对方加入...</div>
+                    </div>
+
+                    <div class="card">
+                        <h2>📁 上传集合 + 关联数值</h2>
+                        <p style="color:#666;font-size:13px;margin-bottom:10px;">
+                            PSI-Sum 会计算双方交集对应的 <strong>sender 关联数值之和</strong>。<br>
+                            集合文件每行一个元素（数字/文本均可）。value 文件每行一个整数/小数（与集合行数一致）。
+                        </p>
+                        <div class="form-group">
+                            <label>① 集合文件 <span style="color:#999">(必填)</span></label>
+                            <input type="file" id="psiSumFile" accept=".txt,.csv">
+                        </div>
+                        <div class="form-group">
+                            <label>② 关联数值文件 <span style="color:#999">(可选, 推荐提供)</span></label>
+                            <input type="file" id="psiSumValueFile" accept=".txt,.csv">
+                        </div>
+                        <button class="btn btn-primary" id="psiSumUploadBtn" onclick="PSI_SUM.uploadFile()" disabled>📤 上传</button>
+                        <button class="btn btn-secondary" id="psiSumDeleteUploadBtn" onclick="PSI_SUM.deleteUpload()" style="margin-left:8px;display:none;">↩ 撤回上传</button>
+                        <span id="psiSumUploadStatus" style="margin-left: 15px; color: #5a8a3a;"></span>
+                    </div>
+
+                    <div class="card" id="psiSumStartCard" style="display:none;">
+                        <h2>▶ 触发运算</h2>
+                        <p style="color: #666; margin-bottom: 10px;">双方已上传, 点击下方按钮触发隐私求和 (Kunlun mqRPMT-PSI-Sum)。</p>
+                        <button class="btn btn-success" id="psiSumStartBtn" onclick="PSI_SUM.start()">▶ 开始隐私求和</button>
+                        <span id="psiSumSaveRoundHint" class="hint-text hidden" style="margin-left:10px;color:#666;font-size:13px;">💡 运算完成后可归档本轮历史</span>
+                        <button class="btn btn-secondary hidden" id="psiSumSaveRoundBtn" onclick="PSI_SUM.saveAndStartNewRound()" style="margin-left:8px;">💾 保存当前结果,开始下一轮</button>
+                    </div>
+
+                    <div class="card" id="psiSumPreviewCard" style="display:none;">
+                        <h2>📄 预览 (前 20 项)</h2>
+                        <h3 style="margin-top: 10px; font-size:14px;">📄 集合明文</h3>
+                        <pre id="psiSumPlaintext" style="background: #f5f5f5; padding: 10px; border-radius: 4px; max-height: 250px; overflow: auto; word-break: break-all;"></pre>
+                        <h3 style="margin-top: 15px; font-size:14px;">💰 关联数值</h3>
+                        <pre id="psiSumValues" style="background: #f5f5f5; padding: 10px; border-radius: 4px; max-height: 250px; overflow: auto; word-break: break-all;"></pre>
+                        <h3 style="margin-top: 15px; font-size:14px;">🔒 OPRF 密文 (PSI-Sum 不生成, 仅为占位)</h3>
+                        <pre id="psiSumCiphertext" style="background: #f5f5f5; padding: 10px; border-radius: 4px; max-height: 250px; overflow: auto; word-break: break-all;"></pre>
+                    </div>
+
+                    <div class="card" id="psiSumResultCard" style="display:none;">
+                        <h2>🎯 隐私求和结果</h2>
+                        <div style="background: #e8f4e8; padding: 20px; border-radius: 6px; margin-top: 10px;">
+                            <p style="margin-bottom: 10px;">交集大小 (cardinality): <strong id="psiSumCardinality" style="font-size: 20px; color: #5a8a3a;"></strong></p>
+                            <p style="margin-bottom: 10px;">关联数值之和 (sum): <strong id="psiSumSum" style="font-size: 20px; color: #5a8a3a;"></strong></p>
+                            <p style="margin-bottom: 0; color:#666;">运算耗时: <span id="psiSumDuration" style="font-weight:600;">-</span></p>
+                        </div>
+                        <p style="color:#666;font-size:13px;margin-top:10px;">
+                            💡 <strong>协议特性</strong>: PSI-Sum 仅 sender 知晓完整的交集元素与其关联数值之和,
+                            receiver 只能得知交集大小。这是协议固有的隐私属性，非系统设计缺陷。
+                        </p>
+                    </div>
                 </div>
 
-                <div class="card">
-                    <h2>📁 上传集合 + 关联数值</h2>
-                    <p style="color:#666;font-size:13px;margin-bottom:10px;">
-                        PSI-Sum 会计算双方交集对应的 <strong>sender 关联数值之和</strong>。<br>
-                        集合文件每行一个元素（数字/文本均可）。value 文件每行一个整数/小数（与集合行数一致）。
-                    </p>
-                    <div class="form-group">
-                        <label>① 集合文件 <span style="color:#999">(必填)</span></label>
-                        <input type="file" id="psiSumFile" accept=".txt,.csv">
+                <!-- 历史记录 tab -->
+                <div id="psiSumHistoryTab" style="display:none;">
+                    <div id="psiSumHistoryList">
+                        <div class="empty-state">暂无历史记录<br><span class="hint-text">点击 "💾 保存当前结果,开始下一轮" 后会出现历史</span></div>
                     </div>
-                    <div class="form-group">
-                        <label>② 关联数值文件 <span style="color:#999">(可选, 推荐提供)</span></label>
-                        <input type="file" id="psiSumValueFile" accept=".txt,.csv">
-                    </div>
-                    <button class="btn btn-primary" id="psiSumUploadBtn" onclick="PSI_SUM.uploadFile()" disabled>📤 上传</button>
-                    <button class="btn btn-secondary" id="psiSumDeleteUploadBtn" onclick="PSI_SUM.deleteUpload()" style="margin-left:8px;display:none;">↩ 撤回上传</button>
-                    <span id="psiSumUploadStatus" style="margin-left: 15px; color: #5a8a3a;"></span>
-                </div>
-
-                <div class="card" id="psiSumStartCard" style="display:none;">
-                    <h2>🚀 开始运算</h2>
-                    <p style="color: #666; margin-bottom: 10px;">双方已上传, 点击下方按钮触发隐私求和 (Kunlun mqRPMT-PSI-Sum)。</p>
-                    <button class="btn btn-success" id="psiSumStartBtn" onclick="PSI_SUM.start()">▶ 开始隐私求和</button>
-                </div>
-
-                <div class="card" id="psiSumPreviewCard" style="display:none;">
-                    <h2>📄 预览 (前 20 项)</h2>
-                    <h3 style="margin-top: 10px; font-size:14px;">📄 集合明文</h3>
-                    <pre id="psiSumPlaintext" style="background: #f5f5f5; padding: 10px; border-radius: 4px; max-height: 250px; overflow: auto; word-break: break-all;"></pre>
-                    <h3 style="margin-top: 15px; font-size:14px;">💰 关联数值</h3>
-                    <pre id="psiSumValues" style="background: #f5f5f5; padding: 10px; border-radius: 4px; max-height: 250px; overflow: auto; word-break: break-all;"></pre>
-                    <h3 style="margin-top: 15px; font-size:14px;">🔒 OPRF 密文 (运算后才有)</h3>
-                    <pre id="psiSumCiphertext" style="background: #f5f5f5; padding: 10px; border-radius: 4px; max-height: 250px; overflow: auto; word-break: break-all;"></pre>
-                </div>
-
-                <div class="card" id="psiSumResultCard" style="display:none;">
-                    <h2>🎯 隐私求和结果</h2>
-                    <div style="background: #e8f4e8; padding: 20px; border-radius: 6px; margin-top: 10px;">
-                        <p style="margin-bottom: 10px;">交集大小 (cardinality): <strong id="psiSumCardinality" style="font-size: 20px; color: #5a8a3a;"></strong></p>
-                        <p style="margin-bottom: 10px;">关联数值之和 (sum): <strong id="psiSumSum" style="font-size: 20px; color: #5a8a3a;"></strong></p>
-                        <p style="margin-bottom: 0; color:#666;">运算耗时: <span id="psiSumDuration" style="font-weight:600;">-</span></p>
-                    </div>
-                    <p style="color:#666;font-size:13px;margin-top:10px;">
-                        💡 <strong>协议特性</strong>: PSI-Sum 仅 sender 知晓完整的交集元素与其关联数值之和,
-                        receiver 只能得知交集大小。这是协议固有的隐私属性，非系统设计缺陷。
-                    </p>
                 </div>
             </div>
 
@@ -2695,6 +2784,7 @@ body > .sidebar {
                         <span class="group-info-label">创建时间</span>
                         <span class="group-info-value" id="ssPsiCreatedAt"></span>
                     </div>
+                    <button class="btn btn-danger" style="margin-top:10px;" onclick="SS_PSI.deleteGroup()">🗑 解散小组</button>
                 </div>
 
                 <div class="card">

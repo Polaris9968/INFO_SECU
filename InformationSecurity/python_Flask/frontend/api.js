@@ -685,3 +685,52 @@ async function apiDeletePSISumUpload(groupId) {
     });
 }
 
+// 2026-07-07:PSI-Sum 多轮历史 API (跟 PSI_INT 同步)
+async function apiFinalizePSISumRound(groupId) {
+    return await request(`/psi-sum-group/${groupId}/finalize-round`, {
+        method: "POST",
+    });
+}
+
+async function apiGetPSISumGroupHistory(groupId) {
+    return await request(`/psi-sum-group/${groupId}/history`, {
+        method: "GET",
+    });
+}
+
+// 下载某 round 的归档文件
+// type: my_plaintext | my_value | result_cardinality | result_sum
+function apiDownloadPSISumRoundFile(groupId, roundNum, type) {
+    const token = sessionStorage.getItem("token");
+    if (!token) {
+        alert('未登录,请重新登录');
+        return;
+    }
+    const url = `/api/psi-sum-group/${groupId}/round/${roundNum}/download?type=${type}`;
+    fetch(url, { headers: { 'Authorization': `Bearer ${token}` } })
+    .then(async response => {
+        if (!response.ok) {
+            const text = await response.text();
+            let msg = '下载失败';
+            try {
+                const d = JSON.parse(text);
+                msg = d.error || msg;
+            } catch(e) {}
+            throw new Error(msg + ' (HTTP ' + response.status + ')');
+        }
+        return response.blob();
+    })
+    .then(blob => {
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `psisum_${groupId}_round${roundNum}_${type}.txt`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(a.href);
+    })
+    .catch(err => {
+        alert('下载失败: ' + err.message);
+    });
+}
+

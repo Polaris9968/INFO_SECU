@@ -2723,6 +2723,7 @@ window.PSI_SUM = (function() {
         if (status) status.textContent = '';
         renderFromDetail();
         startPolling();
+        await loadPsiSumHistory();
     }
 
     function renderFromDetail() {
@@ -2854,6 +2855,19 @@ window.PSI_SUM = (function() {
             startBtn.disabled = true;
             startBtn.textContent = '✓ 已完成';
         }
+        // 2026-07-07:运算完成后给 creator (receiver) 显示保存按钮
+        const saveBtn = document.getElementById('psiSumSaveRoundBtn');
+        const saveHint = document.getElementById('psiSumSaveRoundHint');
+        if (saveBtn && saveHint) {
+            const isCreator = detail.group && detail.group.creator === sessionStorage.getItem('username');
+            if (isCreator) {
+                saveBtn.classList.remove('hidden');
+                saveHint.classList.remove('hidden');
+            } else {
+                saveBtn.classList.add('hidden');
+                saveHint.classList.add('hidden');
+            }
+        }
     }
 
     async function uploadFile() {
@@ -2955,8 +2969,145 @@ window.PSI_SUM = (function() {
         currentGroupId = null;
         currentGroupDetail = null;
         stopPolling();
+        // 2026-07-07:重置 tab 到“当前操作”
+        switchTab('current');
+        const tabHistory = document.getElementById('psiSumTabHistory');
+        if (tabHistory) tabHistory.style.display = 'none';
+        const histCount = document.getElementById('psiSumHistoryCount');
+        if (histCount) histCount.innerText = '0';
         showView1();
         loadMyGroups();
+    }
+
+    // 2026-07-07:多轮历史 - tab 切换
+    function switchTab(tab) {
+        const currentTabEl = document.getElementById('psiSumCurrentTab');
+        const historyTabEl = document.getElementById('psiSumHistoryTab');
+        const tabCurrentBtn = document.getElementById('psiSumTabCurrent');
+        const tabHistoryBtn = document.getElementById('psiSumTabHistory');
+        if (!currentTabEl) return;
+        if (tab === 'current') {
+            currentTabEl.style.display = 'block';
+            if (historyTabEl) historyTabEl.style.display = 'none';
+            if (tabCurrentBtn) tabCurrentBtn.classList.add('active');
+            if (tabHistoryBtn) tabHistoryBtn.classList.remove('active');
+        } else {
+            currentTabEl.style.display = 'none';
+            if (historyTabEl) historyTabEl.style.display = 'block';
+            if (tabCurrentBtn) tabCurrentBtn.classList.remove('active');
+            if (tabHistoryBtn) tabHistoryBtn.classList.add('active');
+        }
+    }
+
+    // 2026-07-07:多轮历史 - 加载历史
+    async function loadPsiSumHistory() {
+        if (!currentGroupId) return;
+        try {
+            const result = await apiGetPSISumGroupHistory(currentGroupId);
+            if (result.success) {
+                const rounds = result.data.rounds || [];
+                const countEl = document.getElementById('psiSumHistoryCount');
+                if (countEl) countEl.innerText = rounds.length;
+                // tabs: 0 条时隐藏历史 tab
+                const tabHistoryBtn = document.getElementById('psiSumTabHistory');
+                if (tabHistoryBtn) {
+                    tabHistoryBtn.style.display = rounds.length > 0 ? 'inline-block' : 'none';
+                }
+                const list = document.getElementById('psiSumHistoryList');
+                if (!list) return;
+                if (rounds.length === 0) {
+                    list.innerHTML = '<div class="empty-state">暂无历史记录<br><span class="hint-text">点击 "💾 保存当前结果,开始下一轮" 后会出现历史</span></div>';
+                    return;
+                }
+                // 倒序(最新在最上面)
+                const reversed = [...rounds].reverse();
+                list.innerHTML = reversed.map(r => {
+                    const resultInfo = r.result || {};
+                    const dur = r.computation_human ? `⏱ ${r.computation_human}` : '';
+                    return `
+                        <div class="round-item">
+                            <div class="round-header">
+                                <span class="round-title">第 ${r.round} 轮</span>
+                                <span class="round-meta">${r.completed_at} · 由 ${r.completed_by} 保存${dur ? ' · ' + dur : ''}</span>
+                            </div>
+                            <div class="round-body">
+                                <span>我的集合: <strong>${r.my_upload_count}</strong> 个</span>
+                                <span style="margin-left: 20px;">我的 value: <strong>${r.my_value_count}</strong> 个</span>
+                                <span style="margin-left: 20px;">交集基数: <strong>${resultInfo.cardinality ?? '-'}</strong></span>
+                                <span style="margin-left: 20px;">求和: <strong>${resultInfo.sum ?? '-'}</strong></span>
+                            </div>
+                            <div class="round-actions">
+                                <button class="btn btn-primary" onclick="PSI_SUM.downloadRoundFile(${r.round}, 'my_plaintext')">📥 我的明文</button>
+                                <button class="btn btn-primary" onclick="PSI_SUM.downloadRoundFile(${r.round}, 'my_value')">📥 我的 value</button>
+                                <button class="btn btn-success" onclick="PSI_SUM.downloadRoundFile(${r.round}, 'result_cardinality')">📥 基数</button>
+                                <button class="btn btn-success" onclick="PSI_SUM.downloadRoundFile(${r.round}, 'result_sum')">📥 求和</button>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+        } catch (error) {
+            console.error('加载 PSI-Sum 历史失败:', error);
+        }
+    }
+
+    // 2026-07-07:多轮历史 - 保存当前结果,开始下一轮
+    async function saveAndStartNewRound() {
+        if (!currentGroupId) return;
+        if (!confirm('确定要保存当前结果到历史, 双方需要重新上传文件, 开始下一轮吗?')) return;
+        try {
+            const result = await apiFinalizePSISumRound(currentGroupId);
+            if (result.success) {
+                alert(`✓ 第 ${result.data.round} 轮已保存到历史\n双方可重新上传文件开始第 ${result.data.round + 1} 轮`);
+                // 清空当前结果
+                const resultCard = document.getElementById('psiSumResultCard');
+                if (resultCard) resultCard.style.display = 'none';
+                const previewCard = document.getElementById('psiSumPreviewCard');
+                if (previewCard) previewCard.style.display = 'none';
+                const startCard = document.getElementById('psiSumStartCard');
+                if (startCard) startCard.style.display = 'none';
+                const origEl = document.getElementById('psiSumPlaintext');
+                if (origEl) origEl.textContent = '';
+                const valEl = document.getElementById('psiSumValues');
+                if (valEl) valEl.textContent = '';
+                const ctEl = document.getElementById('psiSumCiphertext');
+                if (ctEl) ctEl.textContent = '';
+                const cardEl = document.getElementById('psiSumCardinality');
+                if (cardEl) cardEl.textContent = '';
+                const sumEl = document.getElementById('psiSumSum');
+                if (sumEl) sumEl.textContent = '';
+                const durEl = document.getElementById('psiSumDuration');
+                if (durEl) durEl.textContent = '';
+                const setInput = document.getElementById('psiSumFile');
+                if (setInput) setInput.value = '';
+                const valInput = document.getElementById('psiSumValueFile');
+                if (valInput) valInput.value = '';
+                const status = document.getElementById('psiSumUploadStatus');
+                if (status) status.textContent = '';
+                const saveBtn = document.getElementById('psiSumSaveRoundBtn');
+                if (saveBtn) saveBtn.classList.add('hidden');
+                const saveHint = document.getElementById('psiSumSaveRoundHint');
+                if (saveHint) saveHint.classList.add('hidden');
+                // 重新加载
+                const detail = await loadGroupDetail(currentGroupId);
+                if (detail) {
+                    currentGroupDetail = detail;
+                    renderFromDetail();
+                }
+                await loadPsiSumHistory();
+            } else {
+                alert('保存失败: ' + (result.message || '未知错误'));
+            }
+        } catch (error) {
+            console.error('保存 PSI-Sum 轮次失败:', error);
+            alert('保存失败: 网络错误');
+        }
+    }
+
+    // 2026-07-07:多轮历史 - 下载某 round 文件
+    function downloadRoundFile(roundNum, type) {
+        if (!currentGroupId) return;
+        apiDownloadPSISumRoundFile(currentGroupId, roundNum, type);
     }
 
     return {
@@ -2969,6 +3120,10 @@ window.PSI_SUM = (function() {
         start,
         deleteGroup,
         backToList,
+        switchTab,
+        loadPsiSumHistory,
+        saveAndStartNewRound,
+        downloadRoundFile,
         _loadMyGroups: loadMyGroups
     };
 })();
@@ -3205,5 +3360,13 @@ window.SS_PSI = (function() {
         loadMyGroups();
     }
 
-    return { init, createGroup, joinGroup, enterGroup, uploadFile, start, backToList, _loadMyGroups: loadMyGroups };
+    // 2026-07-07: 解散小组 (SS-PSI 是 mock, 后端无 DELETE API, 只能提示用户)
+    async function deleteGroup() {
+        if (!currentGroupId) return;
+        if (!confirm('确认解散该 SS-PSI 小组吗?')) return;
+        // SS-PSI mock 后端没有 DELETE API, 调用会 404, 这里给明确提示
+        alert('⚠ SS-PSI 当前是 mock 状态, 后端暂未实现解散 API。\n\n该 UI 按钮为占位, 待 SS-PSI 真实后端接入后可用。');
+    }
+
+    return { init, createGroup, joinGroup, enterGroup, uploadFile, start, backToList, deleteGroup, _loadMyGroups: loadMyGroups };
 })();
