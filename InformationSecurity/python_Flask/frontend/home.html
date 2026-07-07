@@ -1857,9 +1857,91 @@ body > .sidebar {
 }
 
 /* ============================================================
-   2026-07-08: PSI-Sum page 按钮补齐 (PSI_INT/MATCH/UNION 都有 .btn-primary/-success 等 scope,
-   PSI_Sum 遗漏导致按钮全是浅灰, 这次补齐)
+   2026-07-08: PSI-Sum page 核心 scoped 样式补齐
+   (PSI_INT 完整定义 .card / .card h2/.h3 / .form-group input / .btn / .form-group select,
+   PSI_Sum 只复制了 .label, 其他没复制导致字号/间距/圆角/输入框全部不一致)
    ============================================================ */
+.psi-sum-page .card {
+    background: white;
+    color: #333;
+    padding: 20px;
+    border-radius: 12px;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 15px #f3f4f6;
+}
+.psi-sum-page .main-container {
+    display: block;
+    margin-top: 0;
+}
+.psi-sum-page .sidebar {
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    background: #f3f4f6;
+    padding: 25px;
+    box-sizing: border-box;
+}
+.psi-sum-page .main-content {
+    display: block;
+    padding: 25px;
+}
+.psi-sum-page .back-btn {
+    margin-bottom: 20px;
+    background: #6b7280;
+    color: #ffffff;
+}
+.psi-sum-page .card h2 {
+    margin-bottom: 15px;
+    color: #3b82f6;
+    font-size: 18px;
+}
+.psi-sum-page .card h3 {
+    margin-bottom: 10px;
+    color: #3b82f6;
+    font-size: 16px;
+}
+.psi-sum-page .form-group {
+    margin-bottom: 15px;
+}
+.psi-sum-page .form-group input,
+.psi-sum-page .form-group select,
+.psi-sum-page .form-group textarea {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 14px;
+    color: #333;
+    box-sizing: border-box;
+}
+.psi-sum-page .form-group input:focus,
+.psi-sum-page .form-group select:focus,
+.psi-sum-page .form-group textarea:focus {
+    outline: none;
+    border-color: #3b82f6;
+}
+.psi-sum-page .form-group select {
+    background: white;
+    cursor: pointer;
+}
+.psi-sum-page .btn {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.3s;
+    margin-right: 10px;
+    margin-top: 10px;
+}
+.psi-sum-page .btn-secondary {
+    background: #6b7280;
+    color: #ffffff;
+    border: none;
+}
+.psi-sum-page .btn-secondary:hover:not(:disabled) {
+    background: #4b5563;
+}
 .psi-sum-page .btn-primary {
     background: #3b82f6;
     color: #ffffff;
