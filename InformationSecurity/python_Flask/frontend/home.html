@@ -2531,6 +2531,14 @@ body > .sidebar {
                         <label>小组名称（创建新小组）</label>
                         <input type="text" id="psiSumGroupNameInput" placeholder="输入小组名称" maxlength="50">
                     </div>
+                    <div class="form-group">
+                        <label>集合标准化方式</label>
+                        <select id="psiSumStandardizeMode" style="width:100%;padding:8px;border:1px solid #ccc;border-radius:4px;">
+                            <option value="auto">自动（纯数字保留原值，其他文本 SHA-256）</option>
+                            <option value="number_only">只保留数字元素</option>
+                            <option value="text_all">所有元素都 SHA-256 哈希</option>
+                        </select>
+                    </div>
                     <button class="btn btn-primary" onclick="PSI_SUM.createGroup()">创建小组</button>
                     <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #eee;">
                         <div class="form-group">
@@ -2568,6 +2576,11 @@ body > .sidebar {
                         <span class="group-info-label">创建时间</span>
                         <span class="group-info-value" id="psiSumCreatedAt"></span>
                     </div>
+                    <div class="group-info-item">
+                        <span class="group-info-label">标准化方式</span>
+                        <span class="group-info-value" id="psiSumStandardizeModeShown">自动</span>
+                    </div>
+                    <button class="btn btn-danger" style="margin-top:10px;" onclick="PSI_SUM.deleteGroup()">🗑 解散小组</button>
                 </div>
 
                 <div class="card">
@@ -2580,26 +2593,37 @@ body > .sidebar {
                 </div>
 
                 <div class="card">
-                    <h2>📁 上传文件</h2>
+                    <h2>📁 上传集合 + 关联数值</h2>
+                    <p style="color:#666;font-size:13px;margin-bottom:10px;">
+                        PSI-Sum 会计算双方交集对应的 <strong>sender 关联数值之和</strong>。<br>
+                        集合文件每行一个元素（数字/文本均可）。value 文件每行一个整数/小数（与集合行数一致）。
+                    </p>
                     <div class="form-group">
-                        <label>选择文件 (整数/小数/负数, 空格/换行/逗号分隔)</label>
+                        <label>① 集合文件 <span style="color:#999">(必填)</span></label>
                         <input type="file" id="psiSumFile" accept=".txt,.csv">
                     </div>
+                    <div class="form-group">
+                        <label>② 关联数值文件 <span style="color:#999">(可选, 推荐提供)</span></label>
+                        <input type="file" id="psiSumValueFile" accept=".txt,.csv">
+                    </div>
                     <button class="btn btn-primary" id="psiSumUploadBtn" onclick="PSI_SUM.uploadFile()" disabled>📤 上传</button>
+                    <button class="btn btn-secondary" id="psiSumDeleteUploadBtn" onclick="PSI_SUM.deleteUpload()" style="margin-left:8px;display:none;">↩ 撤回上传</button>
                     <span id="psiSumUploadStatus" style="margin-left: 15px; color: #5a8a3a;"></span>
                 </div>
 
                 <div class="card" id="psiSumStartCard" style="display:none;">
                     <h2>🚀 开始运算</h2>
-                    <p style="color: #666; margin-bottom: 10px;">所有成员已上传, 点击下方按钮触发隐私求和 (演示模式)。</p>
+                    <p style="color: #666; margin-bottom: 10px;">双方已上传, 点击下方按钮触发隐私求和 (Kunlun mqRPMT-PSI-Sum)。</p>
                     <button class="btn btn-success" id="psiSumStartBtn" onclick="PSI_SUM.start()">▶ 开始隐私求和</button>
                 </div>
 
                 <div class="card" id="psiSumPreviewCard" style="display:none;">
-                    <h2>📄 明文 / 密文预览</h2>
-                    <h3 style="margin-top: 10px;">📄 己方明文前 20 个</h3>
+                    <h2>📄 预览 (前 20 项)</h2>
+                    <h3 style="margin-top: 10px; font-size:14px;">📄 集合明文</h3>
                     <pre id="psiSumPlaintext" style="background: #f5f5f5; padding: 10px; border-radius: 4px; max-height: 250px; overflow: auto; word-break: break-all;"></pre>
-                    <h3 style="margin-top: 15px;">🔒 己方密文前 20 个 (OPRF 编码后)</h3>
+                    <h3 style="margin-top: 15px; font-size:14px;">💰 关联数值</h3>
+                    <pre id="psiSumValues" style="background: #f5f5f5; padding: 10px; border-radius: 4px; max-height: 250px; overflow: auto; word-break: break-all;"></pre>
+                    <h3 style="margin-top: 15px; font-size:14px;">🔒 OPRF 密文 (运算后才有)</h3>
                     <pre id="psiSumCiphertext" style="background: #f5f5f5; padding: 10px; border-radius: 4px; max-height: 250px; overflow: auto; word-break: break-all;"></pre>
                 </div>
 
@@ -2607,8 +2631,13 @@ body > .sidebar {
                     <h2>🎯 隐私求和结果</h2>
                     <div style="background: #e8f4e8; padding: 20px; border-radius: 6px; margin-top: 10px;">
                         <p style="margin-bottom: 10px;">交集大小 (cardinality): <strong id="psiSumCardinality" style="font-size: 20px; color: #5a8a3a;"></strong></p>
-                        <p>关联数值之和 (sum): <strong id="psiSumSum" style="font-size: 20px; color: #5a8a3a;"></strong></p>
+                        <p style="margin-bottom: 10px;">关联数值之和 (sum): <strong id="psiSumSum" style="font-size: 20px; color: #5a8a3a;"></strong></p>
+                        <p style="margin-bottom: 0; color:#666;">运算耗时: <span id="psiSumDuration" style="font-weight:600;">-</span></p>
                     </div>
+                    <p style="color:#666;font-size:13px;margin-top:10px;">
+                        💡 <strong>协议特性</strong>: PSI-Sum 仅 sender 知晓完整的交集元素与其关联数值之和,
+                        receiver 只能得知交集大小。这是协议固有的隐私属性，非系统设计缺陷。
+                    </p>
                 </div>
             </div>
 

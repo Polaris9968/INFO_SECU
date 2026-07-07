@@ -2561,56 +2561,84 @@ window.addEventListener("beforeunload", () => {
 })();
 
 
-// PSI_SUM IIFE (真实后端小组管理, 仅运算 mock)
-// 2026-07-05
+// PSI_SUM IIFE (2026-07-07 从 mock 升级为真实接口)
+// 与 PSI_INT/PSU/PSIMatch 共享同一套 UX 模板:
+//   - view1: 创建 / 加入 / 我的小组列表
+//   - view2: 进组后, 5 个区块: 小组信息 / 成员状态 / 上传 / 开始运算 / 预览 + 结果
+// 差异: 比 PSI-Card 多一个 valueFile 输入 + 结果展示同时显示 cardinality + sum
 window.PSI_SUM = (function() {
     let myGroups = [];
     let currentGroupId = null;
-    let currentGroupDetail = null;
     let pollTimer = null;
     let pollBusy = false;
+    let currentGroupDetail = null;
 
-    function getToken() {
-        return sessionStorage.getItem('token') || localStorage.getItem('jwt_token') || '';
+    function escapeHtml(s) {
+        if (s === null || s === undefined) return '';
+        return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
     }
-    function getUsername() {
-        const t = getToken();
-        if (!t) return '';
-        try {
-            const payload = JSON.parse(atob(t.split('.')[1] || ''));
-            return payload.username || payload.sub || '';
-        } catch { return ''; }
-    }
-    async function api(path, opts = {}) {
-        const headers = { 'Authorization': 'Bearer ' + getToken() };
-        if (!(opts.body instanceof FormData) && opts.body && typeof opts.body === 'object') {
-            headers['Content-Type'] = 'application/json';
-            opts.body = JSON.stringify(opts.body);
-        }
-        const r = await fetch(path, { ...opts, headers: { ...headers, ...(opts.headers || {}) } });
-        const j = await r.json().catch(() => ({}));
-        if (!r.ok) throw new Error(j.error || `HTTP ${r.status}`);
-        return j;
-    }
+
     async function loadMyGroups() {
         try {
-            const j = await api('/api/my-psi-sum-groups');
-            myGroups = j.groups || [];
+            const result = await apiGetMyPSISumGroups();
+            if (result.success) {
+                myGroups = result.data.groups || [];
+            } else {
+                myGroups = [];
+            }
         } catch (err) {
             console.error('loadMyGroups 失败:', err);
             myGroups = [];
         }
+        // 如果当前选中 group 已被解散, 静默清除
+        if (currentGroupId && !myGroups.some(g => g.id === currentGroupId)) {
+            backToList();
+        }
         renderMyGroupsList();
     }
+
     async function loadGroupDetail(groupId) {
         try {
-            const j = await api(`/api/psi-sum-groups/${groupId}`);
-            return j.group;
+            const result = await apiGetPSISumGroup(groupId);
+            if (result.success) {
+                return result.data;
+            }
+            return null;
         } catch (err) {
             console.error('loadGroupDetail 失败:', err);
             return null;
         }
     }
+
+    function renderMyGroupsList() {
+        const ul = document.getElementById('psiSumMyGroupList');
+        if (!ul) return;
+        if (myGroups.length === 0) {
+            ul.innerHTML = '<li class="empty-state">暂无求和小组<br><span style="font-size:12px">创建一个新小组或输入ID加入</span></li>';
+            return;
+        }
+        const username = sessionStorage.getItem('username');
+        ul.innerHTML = myGroups.map(g => `
+            <li class="psi-group-item${currentGroupId === g.id ? ' active' : ''}" data-group-id="${g.id}" onclick="PSI_SUM.selectGroup('${g.id}')">
+                <div class="psi-group-name">${escapeHtml(g.name)}</div>
+                <div class="psi-group-id">ID: ${g.id}</div>
+                <div class="psi-group-meta">
+                    <span>🔒 ${g.member_count}人</span>
+                    ${g.creator === username ? '<span style="margin-left:10px;color:#92400e">👑 组长</span>' : ''}
+                </div>
+            </li>
+        `).join('');
+    }
+
+    function showView1() {
+        document.getElementById('psiSumView1').style.display = 'block';
+        document.getElementById('psiSumView2').style.display = 'none';
+    }
+    function showView2() {
+        document.getElementById('psiSumView1').style.display = 'none';
+        document.getElementById('psiSumView2').style.display = 'block';
+    }
+
     function startPolling() {
         stopPolling();
         pollTimer = setInterval(async () => {
@@ -2618,7 +2646,7 @@ window.PSI_SUM = (function() {
             pollBusy = true;
             const detail = await loadGroupDetail(currentGroupId);
             pollBusy = false;
-            if (detail && detail.id === currentGroupId) {
+            if (detail && detail.group.id === currentGroupId) {
                 currentGroupDetail = detail;
                 renderFromDetail();
             }
@@ -2635,146 +2663,294 @@ window.PSI_SUM = (function() {
         showView1();
         await loadMyGroups();
     }
-    function showView1() {
-        document.getElementById('psiSumView1').style.display = 'block';
-        document.getElementById('psiSumView2').style.display = 'none';
-    }
-    function showView2() {
-        document.getElementById('psiSumView1').style.display = 'none';
-        document.getElementById('psiSumView2').style.display = 'block';
-    }
 
     async function createGroup() {
-        const name = document.getElementById('psiSumGroupNameInput').value.trim();
+        const nameInput = document.getElementById('psiSumGroupNameInput');
+        const name = (nameInput.value || '').trim();
         if (!name) { alert('请输入小组名称'); return; }
+        const modeEl = document.getElementById('psiSumStandardizeMode');
+        const mode = modeEl ? modeEl.value : 'auto';
         try {
-            const j = await api('/api/psi-sum-groups', { method: 'POST', body: { name } });
-            document.getElementById('psiSumGroupNameInput').value = '';
-            await loadMyGroups();
-            alert(`✓ 小组已创建\n名称: ${j.group.name}\nID: ${j.group.id}\n将小组 ID 告诉对方让他加入`);
-            enterGroup(j.group.id);
+            const result = await apiCreatePSISumGroup(name, mode);
+            if (result.success) {
+                alert(`✓ 小组创建成功\nID: ${result.data.group.id}\n请告诉对方加入`);
+                nameInput.value = '';
+                await loadMyGroups();
+                await selectGroup(result.data.group.id);
+            } else {
+                alert('创建失败: ' + (result.message || '未知错误'));
+            }
         } catch (err) {
             alert('创建失败: ' + err.message);
         }
     }
+
     async function joinGroup() {
-        const id = document.getElementById('psiSumGroupIdInput').value.trim().toUpperCase().slice(0, 4);
-        if (!id) { alert('请输入小组 ID'); return; }
+        const idInput = document.getElementById('psiSumGroupIdInput');
+        const id = (idInput.value || '').trim().toUpperCase().slice(0, 4);
+        if (!id || id.length !== 4) { alert('请输入4位小组ID'); return; }
         try {
-            const j = await api('/api/psi-sum-groups/join', { method: 'POST', body: { group_id: id } });
-            if (!j.success) { alert('加入失败: ' + (j.message || '未知错误')); return; }
-            document.getElementById('psiSumGroupIdInput').value = '';
-            await loadMyGroups();
-            enterGroup(j.group_id || id);
+            const result = await apiJoinPSISumGroup(id);
+            if (result.success) {
+                alert('加入成功');
+                idInput.value = '';
+                await loadMyGroups();
+                await selectGroup(id);
+            } else {
+                alert('加入失败: ' + (result.message || '未知错误'));
+            }
         } catch (err) {
             alert('加入失败: ' + err.message);
         }
     }
-    function renderMyGroupsList() {
-        const ul = document.getElementById('psiSumMyGroupList');
-        if (myGroups.length === 0) {
-            ul.innerHTML = '<li class="empty-state">暂无小组, 创建或加入一个</li>';
-            return;
-        }
-        ul.innerHTML = myGroups.map(g => `
-            <li class="psi-group-item" onclick="PSI_SUM.enterGroup('${g.id}')">
-                <div class="psi-group-name">${g.name}</div>
-                <div class="psi-group-id">ID: ${g.id}</div>
-                <div class="psi-group-meta">${g.member_count} 人 · ${g.created_at}</div>
-            </li>
-        `).join('');
-    }
 
-    async function enterGroup(groupId) {
+    async function selectGroup(groupId) {
         currentGroupId = groupId;
-        showView2();
         const detail = await loadGroupDetail(groupId);
         if (!detail) { alert('加载小组失败'); backToList(); return; }
         currentGroupDetail = detail;
-        document.getElementById('psiSumCurrentGroupName').textContent = detail.name;
-        document.getElementById('psiSumCurrentGroupId').textContent = detail.id;
-        document.getElementById('psiSumCreatedAt').textContent = detail.created_at;
-        document.getElementById('psiSumCreator').textContent = detail.creator;
-        document.getElementById('psiSumFile').value = '';
-        document.getElementById('psiSumUploadStatus').textContent = '';
-        document.getElementById('psiSumUploadBtn').disabled = true;
+        showView2();
+        // 高亮当前选中的组
+        document.querySelectorAll('#psiSumMyGroupList .psi-group-item').forEach(li => {
+            li.classList.toggle('active', li.dataset.groupId === groupId);
+        });
+        // 清空 upload 区块
+        const setFile = document.getElementById('psiSumFile');
+        const valFile = document.getElementById('psiSumValueFile');
+        if (setFile) setFile.value = '';
+        if (valFile) valFile.value = '';
+        const status = document.getElementById('psiSumUploadStatus');
+        if (status) status.textContent = '';
         renderFromDetail();
         startPolling();
     }
+
     function renderFromDetail() {
         if (!currentGroupDetail) return;
-        const g = currentGroupDetail;
-        const me = getUsername();
-        const uploadedNames = new Set(g.uploads.map(u => u.username));
-        const members = g.members.map((name, idx) => ({
-            name,
-            uploaded: uploadedNames.has(name),
-            isMe: name === me,
-            role: idx === 0 ? 'receiver' : 'sender'
-        }));
-        document.getElementById('psiSumMemberCount').textContent = `${g.members.length} / 2 人`;
-        document.getElementById('psiSumMemberStatus').innerHTML = members.map(m => `
-            <div class="member-status">
-                <span><strong>${m.name}${m.isMe ? ' (我)' : ''}</strong> · <em>${m.role}</em></span>
-                <span class="status-badge ${m.uploaded ? 'uploaded' : 'pending'}">
-                    ${m.uploaded ? '✓ 已上传' : '⏳ 未上传'}
-                </span>
-            </div>
-        `).join('');
-        const uploadedCount = members.filter(m => m.uploaded).length;
-        const pct = g.members.length ? Math.round((uploadedCount / g.members.length) * 100) : 0;
+        const detail = currentGroupDetail;
+        const group = detail.group;
+        const username = sessionStorage.getItem('username');
+        const myUpload = detail.my_upload;
+        const otherUpload = detail.other_upload;
+
+        // 小组信息
+        document.getElementById('psiSumCurrentGroupName').textContent = group.name;
+        document.getElementById('psiSumCurrentGroupId').textContent = group.id;
+        document.getElementById('psiSumCreator').textContent = group.creator + (group.creator === username ? ' (你)' : '');
+        document.getElementById('psiSumCreatedAt').textContent = group.created_at;
+        const modeLabels = { 'auto': '自动', 'number_only': '只取数字', 'text_all': '全部哈希' };
+        const modeEl = document.getElementById('psiSumStandardizeModeShown');
+        if (modeEl) modeEl.textContent = modeLabels[group.standardize_mode || 'auto'] || (group.standardize_mode || 'auto');
+        document.getElementById('psiSumMemberCount').textContent = `${group.members.length} / 2 人`;
+
+        // 成员状态
+        const uploadedNames = new Set((group.uploads || []).map(u => u.username));
+        const memberStatusHtml = group.members.map((name, idx) => {
+            const up = uploadedNames.has(name);
+            const role = idx === 0 ? 'receiver' : 'sender';
+            return `<div class="member-status">
+                <span><strong>${escapeHtml(name)}${name === username ? ' (你)' : ''}</strong> · <em>${role}</em></span>
+                <span class="status-badge ${up ? 'uploaded' : 'pending'}">${up ? '✓ 已上传' : '⏳ 未上传'}</span>
+            </div>`;
+        }).join('');
+        document.getElementById('psiSumMemberStatus').innerHTML = memberStatusHtml;
+
+        // 进度条
+        const uploadedCount = (group.uploads || []).length;
+        const pct = group.members.length ? Math.round((uploadedCount / group.members.length) * 100) : 0;
         document.getElementById('psiSumProgressFill').style.width = pct + '%';
-        const allUploaded = g.members.length === 2 && uploadedCount === 2;
-        const myUploaded = uploadedNames.has(me);
-        document.getElementById('psiSumUploadBtn').disabled = g.members.length < 2 || myUploaded;
-        document.getElementById('psiSumStartCard').style.display = allUploaded ? 'block' : 'none';
-        const remainText = g.members.length < 2
-            ? `⏳ 等待对方加入 (${g.members.length}/2)...`
-            : (myUploaded ? '⏳ 等待对方上传...' : '📤 请上传你的文件');
-        document.getElementById('psiSumProgressText').textContent = allUploaded ? '✓ 所有成员已上传, 可以开始运算' : remainText;
-        if (g.result) renderResult(g.result);
+        const allUploaded = group.members.length === 2 && uploadedCount === 2;
+        const remainText = group.members.length < 2
+            ? `⏳ 等待对方加入 (${group.members.length}/2)...`
+            : (myUpload ? '⏳ 等待对方上传...' : '📤 请上传你的文件 + 关联数值');
+        document.getElementById('psiSumProgressText').textContent = allUploaded ? '✓ 双方已上传, 可以开始运算' : remainText;
+
+        // 上传按钮状态
+        const uploadBtn = document.getElementById('psiSumUploadBtn');
+        if (uploadBtn) {
+            if (myUpload) {
+                uploadBtn.disabled = true;
+                uploadBtn.textContent = '✓ 已上传';
+            } else {
+                uploadBtn.disabled = group.members.length < 2;
+                uploadBtn.textContent = '📤 上传';
+            }
+        }
+        // 撤回按钮只在已上传后显示
+        const deleteBtn = document.getElementById('psiSumDeleteUploadBtn');
+        if (deleteBtn) {
+            deleteBtn.style.display = myUpload ? 'inline-block' : 'none';
+        }
+
+        // 启动运算按钮
+        const startCard = document.getElementById('psiSumStartCard');
+        const startBtn = document.getElementById('psiSumStartBtn');
+        // 只有 creator (receiver) 能看到并触发
+        const isCreator = group.creator === username;
+        if (startCard) {
+            startCard.style.display = allUploaded && isCreator ? 'block' : 'none';
+        }
+        if (startBtn && detail.cardinality_result !== null && detail.cardinality_result !== undefined) {
+            startBtn.disabled = true;
+            startBtn.textContent = '✓ 已完成';
+        } else if (startBtn) {
+            startBtn.disabled = false;
+            startBtn.textContent = '▶ 开始隐私求和';
+        }
+
+        // 预览：己方明文 + 己方 value (上传后立即显示)
+        renderPreview(detail, username);
+
+        // 结果展示
+        if (detail.cardinality_result !== null && detail.cardinality_result !== undefined) {
+            renderResult(detail);
+        }
     }
-    function renderResult(result) {
-        document.getElementById('psiSumCardinality').textContent = result.cardinality ?? '-';
-        document.getElementById('psiSumSum').textContent = result.sum ?? '-';
-        document.getElementById('psiSumResultCard').style.display = 'block';
-        const btn = document.getElementById('psiSumStartBtn');
-        if (btn) { btn.disabled = true; btn.textContent = '✓ 已完成'; }
+
+    function renderPreview(detail, username) {
+        const previewCard = document.getElementById('psiSumPreviewCard');
+        const origEl = document.getElementById('psiSumPlaintext');
+        const valEl = document.getElementById('psiSumValues');
+        const ctEl = document.getElementById('psiSumCiphertext');
+        if (!previewCard || !origEl) return;
+
+        const myOrig = detail.my_original_preview || [];
+        const myVal = detail.my_values_preview || [];
+        const myCt = detail.my_ciphertext_preview || [];
+        const myOrigFull = detail.my_original_full_count || 0;
+        const myValFull = detail.my_values_full_count || 0;
+        const myCtFull = detail.my_ciphertext_full_count || 0;
+
+        if (myOrig.length === 0 && myVal.length === 0 && myCt.length === 0) {
+            previewCard.style.display = 'none';
+            return;
+        }
+        previewCard.style.display = 'block';
+        origEl.textContent = myOrig.length ? myOrig.join('\n') + (myOrigFull > 20 ? `\n... (共 ${myOrigFull} 项, 仅显示前 20)` : '') : '(未上传集合)';
+        if (valEl) {
+            valEl.textContent = myVal.length ? myVal.join('\n') + (myValFull > 20 ? `\n... (共 ${myValFull} 项, 仅显示前 20)` : '') : '(未传 value)';
+        }
+        if (ctEl) {
+            ctEl.textContent = myCt.length ? myCt.join('\n') + (myCtFull > 20 ? `\n... (共 ${myCtFull} 项, 仅显示前 20)` : '') : '(尚未运算, 没有密文)';
+        }
+    }
+
+    function renderResult(detail) {
+        const resultCard = document.getElementById('psiSumResultCard');
+        if (!resultCard) return;
+        resultCard.style.display = 'block';
+        document.getElementById('psiSumCardinality').textContent = detail.cardinality_result ?? '-';
+        // sum 是 BigInt, 必须用字符串(避免 JS Number 精度丢失)
+        document.getElementById('psiSumSum').textContent = detail.sum_result || '-';
+        // duration
+        const durEl = document.getElementById('psiSumDuration');
+        if (durEl && detail.sum_persisted) {
+            durEl.textContent = detail.sum_persisted.duration_human || `${detail.sum_persisted.duration_seconds || '?'} 秒`;
+        } else if (durEl) {
+            durEl.textContent = '-';
+        }
+        const startBtn = document.getElementById('psiSumStartBtn');
+        if (startBtn) {
+            startBtn.disabled = true;
+            startBtn.textContent = '✓ 已完成';
+        }
     }
 
     async function uploadFile() {
-        const fileInput = document.getElementById('psiSumFile');
-        const file = fileInput.files[0];
-        if (!file) { alert('请先选择文件'); return; }
+        const setInput = document.getElementById('psiSumFile');
+        const valInput = document.getElementById('psiSumValueFile');
+        const setFile = setInput && setInput.files[0];
+        const valFile = valInput && valInput.files[0];
+        if (!setFile) { alert('请选择集合文件'); return; }
         if (!currentGroupId) { alert('小组未加载'); return; }
+        const statusEl = document.getElementById('psiSumUploadStatus');
+        statusEl.textContent = '⏳ 上传中...';
+        statusEl.style.color = '#666';
         try {
-            const fd = new FormData();
-            fd.append('file', file);
-            const j = await api(`/api/psi-sum-groups/${currentGroupId}/upload`, { method: 'POST', body: fd });
-            document.getElementById('psiSumUploadStatus').textContent = `✓ ${file.name} (${j.count} 条)`;
-            document.getElementById('psiSumUploadStatus').style.color = '#5a8a3a';
-            const detail = await loadGroupDetail(currentGroupId);
-            if (detail) { currentGroupDetail = detail; renderFromDetail(); }
+            const result = await apiPSISumUpload(currentGroupId, setFile, valFile);
+            if (result.success) {
+                const d = result.data;
+                statusEl.style.color = '#5a8a3a';
+                statusEl.textContent = `✓ ${setFile.name} (${d.upload_count} 个元素)`
+                    + (d.value_count > 0 ? ` + ${d.value_count} 个 value` : ' (未传 value)');
+                const detail = await loadGroupDetail(currentGroupId);
+                if (detail) {
+                    currentGroupDetail = detail;
+                    renderFromDetail();
+                }
+            } else {
+                statusEl.style.color = '#c33';
+                statusEl.textContent = '';
+                alert('上传失败: ' + (result.message || '未知错误'));
+            }
         } catch (err) {
+            statusEl.style.color = '#c33';
+            statusEl.textContent = '';
             alert('上传失败: ' + err.message);
         }
     }
+
+    async function deleteUpload() {
+        if (!currentGroupId) return;
+        if (!confirm('确认撤回本轮上传吗? (双方需重新上传才能再次运算)')) return;
+        try {
+            const result = await apiDeletePSISumUpload(currentGroupId);
+            if (result.success) {
+                alert('已撤回');
+                const detail = await loadGroupDetail(currentGroupId);
+                if (detail) {
+                    currentGroupDetail = detail;
+                    renderFromDetail();
+                }
+            } else {
+                alert('撤回失败: ' + (result.message || '未知错误'));
+            }
+        } catch (err) {
+            alert('撤回失败: ' + err.message);
+        }
+    }
+
     async function start() {
         if (!currentGroupId) { alert('请先选择小组'); return; }
         const btn = document.getElementById('psiSumStartBtn');
         btn.disabled = true;
         btn.textContent = '⏳ 运算中...';
         try {
-            const j = await api(`/api/psi-sum-groups/${currentGroupId}/start`, { method: 'POST' });
-            renderResult(j.result);
-            const detail = await loadGroupDetail(currentGroupId);
-            if (detail) { currentGroupDetail = detail; renderFromDetail(); }
+            const result = await apiStartPSISumComputation(currentGroupId);
+            if (result.success) {
+                const detail = await loadGroupDetail(currentGroupId);
+                if (detail) {
+                    currentGroupDetail = detail;
+                    renderFromDetail();
+                }
+            } else {
+                alert('运算失败: ' + (result.message || '未知错误'));
+                btn.disabled = false;
+                btn.textContent = '▶ 开始隐私求和';
+            }
         } catch (err) {
             alert('运算失败: ' + err.message);
             btn.disabled = false;
-            btn.textContent = '🚀 开始运算';
+            btn.textContent = '▶ 开始隐私求和';
         }
     }
+
+    async function deleteGroup() {
+        if (!currentGroupId) return;
+        if (!confirm('确认解散该 PSI-Sum 小组吗? 此操作不可撤销')) return;
+        try {
+            const result = await apiDeletePSISumGroup(currentGroupId);
+            if (result.success) {
+                alert('小组已解散');
+                backToList();
+            } else {
+                alert('解散失败: ' + (result.message || '未知错误'));
+            }
+        } catch (err) {
+            alert('解散失败: ' + err.message);
+        }
+    }
+
     function backToList() {
         currentGroupId = null;
         currentGroupDetail = null;
@@ -2783,7 +2959,18 @@ window.PSI_SUM = (function() {
         loadMyGroups();
     }
 
-    return { init, createGroup, joinGroup, enterGroup, uploadFile, start, backToList, _loadMyGroups: loadMyGroups };
+    return {
+        init,
+        createGroup,
+        joinGroup,
+        selectGroup,
+        uploadFile,
+        deleteUpload,
+        start,
+        deleteGroup,
+        backToList,
+        _loadMyGroups: loadMyGroups
+    };
 })();
 
 // SS_PSI IIFE (真实后端 4 方小组管理, 仅运算 mock)
