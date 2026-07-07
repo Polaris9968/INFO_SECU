@@ -64,7 +64,8 @@ async function initPage() {
 function showPage(page) {
     // 隐藏所有页面(包括 3 个嵌入的子页面,SPA 化后)
     ["homePage", "profilePage", "settingsPage", "adminPage",
-     "psiIntPage", "psiMatchPage", "psiUnionPage"].forEach(id => {
+     "psiIntPage", "psiMatchPage", "psiUnionPage",
+     "psiSumPage", "ssPsiPage"].forEach(id => {
         const el = document.getElementById(id);
         if (el) el.style.display = "none";
     });
@@ -118,6 +119,20 @@ function showPage(page) {
             if (btn.textContent.trim() === '隐私求并') btn.classList.add('active');
         });
         if (typeof PSI_UNION !== 'undefined' && PSI_UNION.init) PSI_UNION.init();
+    } else if (page === "psiSum") {
+        // 2026-07-05: PSI-Sum 演示 (mock)
+        document.getElementById("psiSumPage").style.display = "block";
+        navBtns.forEach(btn => {
+            if (btn.textContent.trim() === '隐私求和') btn.classList.add('active');
+        });
+        if (typeof PSI_SUM !== 'undefined' && PSI_SUM.init) PSI_SUM.init();
+    } else if (page === "ssPsi") {
+        // 2026-07-05: SS-PSI 演示 (mock)
+        document.getElementById("ssPsiPage").style.display = "block";
+        navBtns.forEach(btn => {
+            if (btn.textContent.trim() === '多方隐私求交') btn.classList.add('active');
+        });
+        if (typeof SS_PSI !== 'undefined' && SS_PSI.init) SS_PSI.init();
     }
 }
 

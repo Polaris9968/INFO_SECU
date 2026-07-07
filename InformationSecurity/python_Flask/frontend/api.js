@@ -42,12 +42,13 @@ async function request(endpoint, options = {}) {
 }
 
 // ==================== 用户注册 ====================
-async function apiRegister(username, password, email) {
+async function apiRegister(username, password, passwordConfirm, email) {
     return await request("/register", {
         method: "POST",
         body: JSON.stringify({
             username,
             password,
+            passwordConfirm,
             email: email || undefined,
         }),
     });

@@ -97,10 +97,10 @@ async function register() {
     setButtonLoading("regBtn", true);
 
     try {
-        const result = await apiRegister(username, password, email);
+        const result = await apiRegister(username, password, passwordConfirm, email);
 
         if (result.success) {
-            showMessage("regMessage", result.message, "success");
+            showMessage("regMessage", result.data.message, "success");
             // 延迟切换到登录
             setTimeout(() => {
                 showLogin();

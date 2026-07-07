@@ -12,59 +12,214 @@
             box-sizing: border-box;
         }
 
-        /* 背景 */
+        /* 背景：维恩图 (对应 PSI / PSU / PSI-Card 三个协议的集合运算语义) */
         body {
-            display: flex;
-            justify-content: center;
-            align-items: center;
             min-height: 100vh;
             margin: 0;
-            padding: 20px;
-
-            /* 设置背景图片 */
-            background-image: url('./background.jpg');
-            background-position: center center;
-            background-repeat: no-repeat;
-            background-size: cover;
+            padding: 40px 20px;
+            background-color: #eef2ff;
+            background-image: radial-gradient(rgba(99, 102, 241, 0.22) 1.2px, transparent 1.2px);
+            background-size: 22px 22px;
             background-attachment: fixed;
         }
 
-        /* 卡片样式：半透明 + 圆角 + 阴影 + 内边距 */
+        /* 维恩图 SVG背景 */
+        .bg-venn {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            z-index: 0;
+            pointer-events: none;
+            mix-blend-mode: multiply;  /* 跟背景颜色乘法,加深对比 */
+            opacity: 0.85;
+        }
+
+        /* 两栏布局容器 */
+        .layout {
+            display: flex;
+            align-items: center;  /* 两栏垂直居中对齐,平衡视觉重心 */
+            justify-content: center;
+            gap: 4rem;
+            width: 100%;
+            max-width: 1100px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 1;
+            min-height: 600px;  /* 给 layout 一个最小高度,让两栏有垂直居中空间 */
+        }
+
+        /* 左栏：项目介绍 */
+        .intro {
+            flex: 1 1 55%;
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .intro-brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 18px;
+        }
+
+        .intro-logo {
+            width: 48px;
+            height: 48px;
+            border-radius: 14px;
+            background: #ffffff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 8px 20px -6px rgba(99, 102, 241, 0.4), 0 0 0 1px rgba(99, 102, 241, 0.1);
+            overflow: hidden;
+        }
+
+        .intro-logo svg {
+            width: 100%;
+            height: 100%;
+        }
+
+        .intro-brand-text {
+            font-size: 13px;
+            font-weight: 700;
+            letter-spacing: 1.5px;
+            color: #64748b;
+        }
+
+        .intro h1 {
+            font-size: 2.2rem;
+            font-weight: 700;
+            line-height: 1.25;
+            color: #0f172a;
+            margin-bottom: 14px;
+            letter-spacing: -0.5px;
+            white-space: nowrap;
+        }
+
+        .intro h1 span {
+            background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .intro-subtitle {
+            font-size: 1.0rem;
+            line-height: 1.7;
+            color: #334155;
+            margin-bottom: 24px;
+            max-width: 480px;
+        }
+
+        /* 三协议特性卡片 */
+        .features {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            margin-bottom: 32px;
+            max-width: 520px;
+        }
+
+        .feature {
+            display: flex;
+            align-items: flex-start;
+            gap: 14px;
+            padding: 14px 18px;
+            background: rgba(255, 255, 255, 0.65);
+            border: 1px solid rgba(255, 255, 255, 0.7);
+            border-radius: 14px;
+            backdrop-filter: blur(8px);
+            box-shadow: 0 4px 12px -4px rgba(15, 23, 42, 0.06);
+            transition: transform 0.25s ease, box-shadow 0.25s ease;
+        }
+
+        .feature:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 24px -8px rgba(15, 23, 42, 0.12);
+        }
+
+        .feature-icon {
+            flex: 0 0 40px;
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            color: white;
+        }
+
+        .feature-icon.psi   { background: linear-gradient(135deg, #3b82f6, #60a5fa); box-shadow: 0 4px 12px -2px rgba(59, 130, 246, 0.45); }
+        .feature-icon.psu   { background: linear-gradient(135deg, #8b5cf6, #a78bfa); box-shadow: 0 4px 12px -2px rgba(139, 92, 246, 0.45); }
+        .feature-icon.psic  { background: linear-gradient(135deg, #10b981, #34d399); box-shadow: 0 4px 12px -2px rgba(16, 185, 129, 0.45); }
+        .feature-icon.pssum { background: linear-gradient(135deg, #f59e0b, #fbbf24); box-shadow: 0 4px 12px -2px rgba(245, 158, 11, 0.45); }
+        .feature-icon.sspsi { background: linear-gradient(135deg, #ef4444, #f87171); box-shadow: 0 4px 12px -2px rgba(239, 68, 68, 0.45); }
+
+        .feature-body { flex: 1; min-width: 0; }
+
+        .feature-title {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #0f172a;
+            margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .feature-tag {
+            font-size: 11px;
+            font-weight: 700;
+            padding: 2px 8px;
+            border-radius: 6px;
+            letter-spacing: 0.3px;
+        }
+
+        .feature-tag.psi  { background: rgba(59, 130, 246, 0.18); color: #1d4ed8; }
+        .feature-tag.psu  { background: rgba(139, 92, 246, 0.18); color: #6d28d9; }
+        .feature-tag.psic { background: rgba(16, 185, 129, 0.18); color: #047857; }
+        .feature-tag.pssum{ background: rgba(245, 158, 11, 0.18); color: #b45309; }
+        .feature-tag.sspsi{ background: rgba(239, 68, 68, 0.18); color: #b91c1c; }
+
+        .feature-desc {
+            font-size: 0.88rem;
+            line-height: 1.55;
+            color: #64748b;
+        }
+
+        /* 右栏：登录/注册卡片 */
+        .auth {
+            flex: 0 0 420px;
+        }
+
         .glass-card {
-            background: rgba(236, 232, 17, 0.5);
-            backdrop-filter: blur(3px);
+            background: rgba(255, 255, 255, 0.82);
+            backdrop-filter: blur(14px);
             border-radius: 2rem;
             padding: 2rem 1.5rem;
             width: 100%;
-            max-width: 450px;
-            box-shadow: 0 20px 35px rgba(0, 0, 0, 0.3);
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 25px 50px -12px rgba(139, 92, 246, 0.25);
+            border: 1px solid rgba(255, 255, 255, 0.6);
             transition: all 0.3s ease;
         }
 
-        /* 标题区域：让图片和文字在同一排 */
         .title-wrapper {
             display: flex;
             justify-content: center;
             align-items: center;
-            gap: 10px;
             margin-bottom: 20px;
-        }
-
-        .glass-card img {
-            width: 130px;
-            height: 50px;
-            object-fit: contain;
         }
 
         .glass-card h2 {
             color: rgb(21, 2, 26);
-            font-weight: 600;
+            font-weight: 700;
             letter-spacing: -0.3px;
             margin: 0;
+            font-size: 1.6rem;  /* 跟左栏 h1 字号错开一点 */
         }
 
-        /* 输入框样式 */
         .glass-card input {
             display: block;
             margin: 15px auto;
@@ -81,7 +236,6 @@
             box-shadow: 0 0 5px rgba(102, 126, 234, 0.3);
         }
 
-        /* 按钮样式 */
         .glass-card button {
             display: block;
             margin: 20px auto 0;
@@ -108,7 +262,6 @@
             transform: none;
         }
 
-        /* 切换链接样式 */
         .glass-card h3 {
             text-align: center;
             margin-top: 20px;
@@ -122,7 +275,6 @@
             cursor: pointer;
         }
 
-        /* 提示信息 */
         .hint {
             text-align: center;
             color: #666;
@@ -130,12 +282,10 @@
             margin-top: 10px;
         }
 
-        /* 隐藏元素 */
         .hidden {
             display: none !important;
         }
 
-        /* 消息提示 */
         .message {
             padding: 10px 15px;
             border-radius: 8px;
@@ -155,35 +305,142 @@
             color: #006400;
             border: 1px solid rgba(0, 128, 0, 0.3);
         }
+
+        /* 响应式：小屏自动堆叠,但首屏优先显示登录框 */
+        @media (max-width: 900px) {
+            .layout {
+                flex-direction: column-reverse;  /* 登录框在上,介绍在下 */
+                gap: 2.5rem;
+            }
+            .intro {
+                flex: 1 1 auto;
+                text-align: center;
+            }
+            .intro-brand { justify-content: center; }
+            .intro h1 { font-size: 1.6rem; white-space: normal; }  /* 小屏允许标题换行 */
+            .intro-subtitle { margin-left: auto; margin-right: auto; font-size: 0.95rem; }
+            .features { margin-left: auto; margin-right: auto; max-width: 460px; }
+            .feature { text-align: left; }  /* 功能卡内容保留左对齐 */
+            .feature-desc { font-size: 0.85rem; }
+            .auth { flex: 1 1 auto; width: 100%; max-width: 420px; }
+        }
     </style>
 </head>
 <body>
-    <!-- 登录卡片 -->
-    <div class="glass-card" id="loginBox">
-        <div class="title-wrapper">
-            <img src="./哈尔滨工业大学.png" alt="哈工大(深圳)">
-            <h2>登录</h2>
-        </div>
-        <div id="loginMessage" class="message hidden"></div>
-        <input id="loginUser" placeholder="用户名">
-        <input id="loginPass" type="password" placeholder="密码">
-        <button id="loginBtn" onclick="login()">登录</button>
-        <h3 class="toggle-link" onclick="showRegister()">没有账号？去注册</h3>
-    </div>
+    <!-- 背景装饰：简化版维恩图,位于视口边缘,不挡内容 -->
+    <svg class="bg-venn" viewBox="0 0 100 100" preserveAspectRatio="none">
+        <circle cx="8" cy="12" r="22" fill="none" stroke="#3b82f6" stroke-width="0.4" stroke-opacity="0.35" stroke-dasharray="0.8 0.6"/>
+        <circle cx="92" cy="88" r="24" fill="none" stroke="#8b5cf6" stroke-width="0.4" stroke-opacity="0.35" stroke-dasharray="0.8 0.6"/>
+    </svg>
 
-    <!-- 注册卡片 -->
-    <div class="glass-card hidden" id="registerBox">
-        <div class="title-wrapper">
-            <img src="./哈尔滨工业大学.png" alt="哈工大(深圳)">
-            <h2>注册</h2>
-        </div>
-        <div id="regMessage" class="message hidden"></div>
-        <input id="regEmail" type="email" placeholder="邮箱（可选）">
-        <input id="regUser" placeholder="用户名（必填）">
-        <input id="regPass" type="password" placeholder="密码（必填）">
-        <input id="regPassConfirm" type="password" placeholder="确认密码">
-        <button id="regBtn" onclick="register()">注册</button>
-        <h3 class="toggle-link" onclick="showLogin()">已有账号？去登录</h3>
+    <div class="layout">
+        <!-- 左栏：项目介绍 -->
+        <section class="intro">
+            <div class="intro-brand">
+                <div class="intro-logo">
+                    <svg viewBox="0 0 48 48">
+                        <circle cx="16" cy="24" r="13" fill="#3b82f6" fill-opacity="0.55"/>
+                        <circle cx="32" cy="24" r="13" fill="#8b5cf6" fill-opacity="0.55"/>
+                        <circle cx="24" cy="14" r="13" fill="#10b981" fill-opacity="0.55"/>
+                    </svg>
+                </div>
+                <div class="intro-brand-text">PSI · PSU · PSI-Card · PSI-Sum · SS-PSI</div>
+            </div>
+
+            <h1>隐私集合<span>运算</span>实验平台</h1>
+
+            <p class="intro-subtitle">
+                端到端安全多方计算系统。
+                两方在不暴露非交集元素的前提下完成求交、求并与子集判定。
+            </p>
+
+            <div class="features">
+                <div class="feature">
+                    <div class="feature-icon psi">🔒</div>
+                    <div class="feature-body">
+                        <div class="feature-title">
+                            隐私求交
+                            <span class="feature-tag psi">PSI</span>
+                        </div>
+                        <div class="feature-desc">两方各持 N 个元素，输出交集元素明文，过程中不泄露非交集元素。</div>
+                    </div>
+                </div>
+
+                <div class="feature">
+                    <div class="feature-icon psu">🔗</div>
+                    <div class="feature-body">
+                        <div class="feature-title">
+                            隐私求并
+                            <span class="feature-tag psu">PSU</span>
+                        </div>
+                        <div class="feature-desc">两方各持 N 个元素，输出完整并集，双方对称可见明文结果。</div>
+                    </div>
+                </div>
+
+                <div class="feature">
+                    <div class="feature-icon psic">✓</div>
+                    <div class="feature-body">
+                        <div class="feature-title">
+                            子集判定
+                            <span class="feature-tag psic">PSI-Card</span>
+                        </div>
+                        <div class="feature-desc">判断"我的集合是否被对方完全包含"并返回交集基数与缺失数。</div>
+                    </div>
+                </div>
+
+                <div class="feature">
+                    <div class="feature-icon pssum">Σ</div>
+                    <div class="feature-body">
+                        <div class="feature-title">
+                            隐私求和
+                            <span class="feature-tag pssum">PSI-Sum</span>
+                        </div>
+                        <div class="feature-desc">在隐私求交基础上, 对交集元素关联数值求和, 仅 receiver 获得数值总额。</div>
+                    </div>
+                </div>
+
+                <div class="feature">
+                    <div class="feature-icon sspsi">⚭</div>
+                    <div class="feature-body">
+                        <div class="feature-title">
+                            多方隐私求交
+                            <span class="feature-tag sspsi">SS-PSI</span>
+                        </div>
+                        <div class="feature-desc">四方场景求共同交集, 适合多方客户去重、跨机构数据联合分析。</div>
+                    </div>
+                </div>
+            </div>
+
+            </section>
+
+        <!-- 右栏：登录/注册 -->
+        <section class="auth">
+            <!-- 登录卡片 -->
+            <div class="glass-card" id="loginBox">
+                <div class="title-wrapper">
+                    <h2>登录</h2>
+                </div>
+                <div id="loginMessage" class="message hidden"></div>
+                <input id="loginUser" placeholder="用户名">
+                <input id="loginPass" type="password" placeholder="密码">
+                <button id="loginBtn" onclick="login()">登录</button>
+                <h3 class="toggle-link" onclick="showRegister()">没有账号？去注册</h3>
+            </div>
+
+            <!-- 注册卡片 -->
+            <div class="glass-card hidden" id="registerBox">
+                <div class="title-wrapper">
+                    <h2>注册</h2>
+                </div>
+                <div id="regMessage" class="message hidden"></div>
+                <input id="regEmail" type="email" placeholder="邮箱（可选）">
+                <input id="regUser" placeholder="用户名（必填）">
+                <input id="regPass" type="password" placeholder="密码（必填）">
+                <input id="regPassConfirm" type="password" placeholder="确认密码">
+                <button id="regBtn" onclick="register()">注册</button>
+                <h3 class="toggle-link" onclick="showLogin()">已有账号？去登录</h3>
+            </div>
+        </section>
     </div>
 
     <script src="./api.js"></script>
